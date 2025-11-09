@@ -37,16 +37,16 @@ class RunPageSpeedAudit implements ShouldQueue
         try {
             $audit = null;
             $strategies = ['desktop', 'mobile'];
-            
+
             foreach ($strategies as $strategy) {
                 Log::info("🔄 Essai avec stratégie: $strategy");
                 $audit = $pagespeed->runAudit($this->url, $strategy);
-                
+
                 if ($this->isAuditValid($audit)) {
                     Log::info("✅ Stratégie $strategy réussie");
                     break;
                 }
-                
+
                 if ($strategy === 'desktop') {
                     sleep(2);
                 }
@@ -59,33 +59,37 @@ class RunPageSpeedAudit implements ShouldQueue
             }
 
             Log::info('🔍 Job PageSpeed - Audit réussi, extraction des données');
-            
+
             $categories = $audit['lighthouseResult']['categories'] ?? [];
-            
+            $audits = $audit['lighthouseResult']['audits'] ?? [];
+
             Log::info('🔍 Catégories trouvées', [
                 'categories' => array_keys($categories),
                 'scores_presents' => $this->getAvailableScores($categories)
             ]);
 
-            // 🔥🔥🔥 CORRECTION CRITIQUE : Utilisation des méthodes du Service
             $score = $categories['performance']['score'] ?? null;
             $metrics = $pagespeed->extractCoreMetrics($audit);
-            $secondaryScores = $pagespeed->extractScoresByCategory($audit); // 🔥 LIGNE CORRIGÉE
+            $secondaryScores = $pagespeed->extractScoresByCategory($audit);
             $accessibilityDetails = $pagespeed->extractCategoryDetails($audit, 'accessibility');
+            $auditFragments = $pagespeed->extractAuditFragments($audits);
 
             $finalScore = $score ? round($score * 100) : null;
 
-            // Log détaillé
             Log::info('🎯 Scores PageSpeed extraits', [
                 'performance' => $finalScore,
                 'accessibilité' => $secondaryScores['accessibilité'],
                 'seo' => $secondaryScores['seo'],
                 'bonnes_pratiques' => $secondaryScores['bonnes pratiques'],
-                
                 'metrics_count' => count($metrics)
             ]);
 
-            // Mise à jour de la base de données
+            Log::info('📋 Audits détaillés extraits', [
+                'opportunities' => count($auditFragments['opportunities'] ?? []),
+                'diagnostics' => count($auditFragments['diagnostics'] ?? []),
+                'informative' => count($auditFragments['informative'] ?? [])
+            ]);
+
             $updateData = [
                 'pagespeed_score' => $finalScore,
                 'pagespeed_metrics' => $metrics,
@@ -94,6 +98,7 @@ class RunPageSpeedAudit implements ShouldQueue
                 'accessibility_title' => $accessibilityDetails['title'],
                 'accessibility_description' => $accessibilityDetails['description'],
                 'accessibility_manual' => $accessibilityDetails['manualDescription'],
+                'pagespeed_audits' => $auditFragments,
             ];
 
             $success = $this->seoAnalysis->update($updateData);
@@ -116,50 +121,34 @@ class RunPageSpeedAudit implements ShouldQueue
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            
+
             $this->updateWithErrorValues($e->getMessage());
         }
     }
 
-    /**
-     * Vérifie si l'audit est valide
-     */
     private function isAuditValid(?array $audit): bool
     {
-        if (!is_array($audit)) {
-            return false;
-        }
-
-        if (!isset($audit['lighthouseResult'])) {
-            return false;
-        }
+        if (!is_array($audit)) return false;
+        if (!isset($audit['lighthouseResult'])) return false;
 
         $categories = $audit['lighthouseResult']['categories'] ?? [];
         return !empty($categories);
     }
 
-    /**
-     * Récupère les scores disponibles
-     */
     private function getAvailableScores(array $categories): array
     {
         $scores = [];
         $availableCategories = ['performance', 'accessibility', 'seo', 'best-practices'];
-        
+
         foreach ($availableCategories as $category) {
-            if (isset($categories[$category]['score'])) {
-                $scores[$category] = round($categories[$category]['score'] * 100);
-            } else {
-                $scores[$category] = 0;
-            }
+            $scores[$category] = isset($categories[$category]['score'])
+                ? round($categories[$category]['score'] * 100)
+                : 0;
         }
-        
+
         return $scores;
     }
 
-    /**
-     * Mettre à jour avec des valeurs "indisponible"
-     */
     private function updateWithUnavailableValues(): void
     {
         $this->seoAnalysis->update([
@@ -169,20 +158,17 @@ class RunPageSpeedAudit implements ShouldQueue
                 'accessibilité' => null,
                 'seo' => null,
                 'bonnes pratiques' => null,
-                
             ],
             'accessibility_score' => 0,
             'accessibility_title' => 'Accessibilité',
             'accessibility_description' => null,
             'accessibility_manual' => null,
+            'pagespeed_audits' => null,
         ]);
-        
+
         Log::info('ℹ️ Données "indisponible" enregistrées');
     }
 
-    /**
-     * Mettre à jour avec des valeurs d'erreur
-     */
     private function updateWithErrorValues(string $errorMessage): void
     {
         $this->seoAnalysis->update([
@@ -192,20 +178,17 @@ class RunPageSpeedAudit implements ShouldQueue
                 'accessibilité' => null,
                 'seo' => null,
                 'bonnes pratiques' => null,
-                
             ],
             'accessibility_score' => 0,
             'accessibility_title' => 'Accessibilité',
             'accessibility_description' => null,
             'accessibility_manual' => null,
+            'pagespeed_audits' => null,
         ]);
-        
+
         Log::error('💥 Valeurs d\'erreur appliquées', ['message' => $errorMessage]);
     }
 
-    /**
-     * Gestion de l'échec du job
-     */
     public function failed(\Throwable $exception): void
     {
         Log::error('💀 Job PageSpeed - Échec complet', [
@@ -213,7 +196,7 @@ class RunPageSpeedAudit implements ShouldQueue
             'url' => $this->url,
             'exception' => $exception->getMessage()
         ]);
-        
+
         $this->updateWithErrorValues('Job échoué: ' . $exception->getMessage());
     }
 }

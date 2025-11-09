@@ -54,6 +54,7 @@ class SeoAnalysis extends Model
         'accessibility_title',
         'accessibility_description',
         'accessibility_manual',
+        'pagespeed_audits',
 
 
     ];
@@ -85,6 +86,7 @@ class SeoAnalysis extends Model
     'pagespeed_score' => 'float',
     'pagespeed_metrics' => 'array',
     'pagespeed_scores' => 'array',
+    'pagespeed_audits' => 'array', // ✅ indispensable
 
     ];
 

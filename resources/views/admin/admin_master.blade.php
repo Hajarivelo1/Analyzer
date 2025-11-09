@@ -616,7 +616,60 @@ nav {
     transition: width 0.4s ease;
 }
 
+.pagespeed-audits {
+    margin-top: 2rem;
+}
 
+.audit-section-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color:rgb(19, 16, 16);
+}
+
+.audit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.audit-card {
+    background: rgba(255, 255, 255, 0.93);
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 0 8px rgba(0,0,0,0.05);
+}
+
+.audit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.audit-title {
+    font-weight: 500;
+    color: #2d4db6;
+}
+
+.audit-description {
+    font-size: 0.95rem;
+    color:rgb(167, 167, 167);
+}
+
+.audit-value {
+    font-size: 0.85rem;
+}
+
+.badge-info {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.audit-description,
+.audit-body {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
 
 
 </style>

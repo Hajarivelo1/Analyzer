@@ -302,6 +302,7 @@ class SeoAnalysisController extends Controller
         'analysis' => $analysis,
         'scores' => $analysis->pagespeed_scores ?? [],
         'metrics' => $analysis->pagespeed_metrics ?? [],
+        'auditFragments' => $analysis->pagespeed_audits, // ✅ indispensable pour <x-pagespeed-audits>
     ]);
 }
 

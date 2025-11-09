@@ -529,6 +529,14 @@
 
 
 
+@if(!empty($auditFragments))
+    <x-pagespeed-audits :auditFragments="$auditFragments" />
+@endif
+
+
+
+
+
 
 
 

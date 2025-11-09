@@ -45,7 +45,7 @@ class PageSpeedService
                         'url_short' => substr($fullUrl, 0, 120) . '...'
                     ]);
 
-                    $response = Http::timeout(60)
+                    $response = Http::timeout(300)
                         ->withOptions([
                             'verify' => app()->environment('local') ? false : true
                         ])
@@ -131,7 +131,7 @@ class PageSpeedService
                 
                 Log::info("🔗 Audit catégorie: $category", ['url_short' => substr($fullUrl, 0, 80) . '...']);
                 
-                $response = Http::timeout(60)->get($fullUrl);
+                $response = Http::timeout(300)->get($fullUrl);
                 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -382,4 +382,50 @@ class PageSpeedService
 
         return $scores;
     }
+
+
+
+    public function extractAuditFragments(array $audits): array
+{
+    $opportunities = [];
+    $diagnostics = [];
+    $informative = [];
+
+    foreach ($audits as $id => $audit) {
+        if (!isset($audit['scoreDisplayMode'])) continue;
+
+        $fragment = [
+            'id' => $id,
+            'title' => $audit['title'] ?? $id,
+            'description' => $audit['description'] ?? null,
+            'score' => $audit['score'] ?? null,
+            'displayValue' => $audit['displayValue'] ?? null,
+            'items' => $audit['details']['items'] ?? [],
+        ];
+
+        match ($audit['scoreDisplayMode']) {
+            'numeric', 'binary' => $fragment['score'] < 1
+                ? $diagnostics[] = $fragment
+                : null,
+            'informative' => $informative[] = $fragment,
+            'manual' => $informative[] = $fragment,
+            default => null,
+        };
+
+        if (isset($audit['details']['overallSavingsMs'])) {
+            $fragment['estimatedSavingsMs'] = $audit['details']['overallSavingsMs'];
+            $opportunities[] = $fragment;
+        }
+    }
+
+    return compact('opportunities', 'diagnostics', 'informative');
+}
+
+
+
+
+
+
+
+
 }
