@@ -11,7 +11,7 @@
         <div class="scores-grid mb-4">
           
             <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">Scores PageSpeed</h5>
+        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">PageSpeed Score</h5>
     </div>
             <div class="row">
                 {{-- Performance --}}

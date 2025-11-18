@@ -364,61 +364,99 @@ class PageSpeedService
     /**
      * 🔥 NOUVELLE MÉTHODE : Extraire tous les scores d'une seule fois
      */
-    public function extractAllScores(array $auditResult): array
-    {
-        if (!isset($auditResult['lighthouseResult']['categories'])) {
-            return [];
-        }
+    // REMPLACEZ votre méthode extractAllScores par :
 
-        $categories = $auditResult['lighthouseResult']['categories'];
-        $scores = [];
-
-        foreach ($categories as $key => $category) {
-            $scores[$key] = [
-                'score' => isset($category['score']) ? round($category['score'] * 100) : 0,
-                'title' => $category['title'] ?? ucfirst($key),
-            ];
-        }
-
-        return $scores;
+public function extractAllScores(array $auditResult): array
+{
+    if (!isset($auditResult['lighthouseResult']['categories'])) {
+        Log::warning('⚠️ Aucune catégorie trouvée dans extractAllScores');
+        return [
+            'performance' => 0,
+            'accessibility' => 0,
+            'seo' => 0,
+            'best-practices' => 0
+        ];
     }
 
+    $categories = $auditResult['lighthouseResult']['categories'];
+    $scores = [];
+
+    foreach ($categories as $key => $category) {
+        $scores[$key] = isset($category['score']) 
+            ? round($category['score'] * 100) 
+            : 0;
+    }
+
+    // Mapping pour le frontend (si nécessaire)
+    $mappedScores = [
+        'performance' => $scores['performance'] ?? 0,
+        'accessibility' => $scores['accessibility'] ?? 0,
+        'seo' => $scores['seo'] ?? 0,
+        'best-practices' => $scores['best-practices'] ?? 0
+    ];
+
+    Log::debug('📊 Scores extraits', $mappedScores);
+
+    return $mappedScores;
+}
 
 
-    public function extractAuditFragments(array $audits): array
+
+
+    // REMPLACEZ votre méthode extractAuditFragments par celle-ci :
+
+public function extractAuditFragments(array $audits): array
 {
-    $opportunities = [];
-    $diagnostics = [];
-    $informative = [];
+    $fragments = [
+        'opportunities' => [],
+        'diagnostics' => [],
+        'informative' => []
+    ];
 
-    foreach ($audits as $id => $audit) {
-        if (!isset($audit['scoreDisplayMode'])) continue;
+    foreach ($audits as $auditId => $auditData) {
+        if (!isset($auditData['title']) || empty($auditData['title'])) {
+            continue;
+        }
 
         $fragment = [
-            'id' => $id,
-            'title' => $audit['title'] ?? $id,
-            'description' => $audit['description'] ?? null,
-            'score' => $audit['score'] ?? null,
-            'displayValue' => $audit['displayValue'] ?? null,
-            'items' => $audit['details']['items'] ?? [],
+            'title' => $auditData['title'],
+            'description' => $auditData['description'] ?? 'Description non disponible',
+            'score' => $auditData['score'] ?? null,
+            'displayValue' => $auditData['displayValue'] ?? null,
         ];
 
-        match ($audit['scoreDisplayMode']) {
-            'numeric', 'binary' => $fragment['score'] < 1
-                ? $diagnostics[] = $fragment
-                : null,
-            'informative' => $informative[] = $fragment,
-            'manual' => $informative[] = $fragment,
-            default => null,
-        };
+        // Log pour débogage
+        Log::debug("📋 Traitement audit: {$auditData['title']}", [
+            'score' => $fragment['score'],
+            'displayValue' => $fragment['displayValue']
+        ]);
 
-        if (isset($audit['details']['overallSavingsMs'])) {
-            $fragment['estimatedSavingsMs'] = $audit['details']['overallSavingsMs'];
-            $opportunities[] = $fragment;
+        // Classification des audits
+        if (isset($auditData['details']['overallSavingsMs'])) {
+            // Opportunités d'optimisation avec économie de temps
+            $fragment['estimatedSavingsMs'] = $auditData['details']['overallSavingsMs'];
+            $fragments['opportunities'][] = $fragment;
+        } elseif ($auditData['scoreDisplayMode'] === 'informative' || 
+                 $auditData['scoreDisplayMode'] === 'manual' ||
+                 $auditData['score'] === null) {
+            // Audits informatifs (pas de score)
+            $fragments['informative'][] = $fragment;
+        } elseif (($auditData['score'] ?? 1) < 0.9) {
+            // Diagnostics (scores faibles)
+            $fragments['diagnostics'][] = $fragment;
+        } else {
+            // Scores bons, on les ignore ou on les met en informative
+            $fragments['informative'][] = $fragment;
         }
     }
 
-    return compact('opportunities', 'diagnostics', 'informative');
+    Log::info('📊 Audits classifiés', [
+        'opportunities_count' => count($fragments['opportunities']),
+        'diagnostics_count' => count($fragments['diagnostics']),
+        'informative_count' => count($fragments['informative'])
+    ]);
+
+    return $fragments;
 }
 
 

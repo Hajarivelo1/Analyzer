@@ -9,14 +9,14 @@
     <div class="glass-card p-4 mb-4 mt-4">
        
         <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h4 class="fw-bold mb-0" style=" color:#2e4db6;">🌐 Informations WHOIS</h4>
+        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🌐 WHOIS Informations</h5>
     </div>
         <div class="row">
-            <div class="col-md-6"><strong>Domaine :</strong> {{ $whois['name'] ?? '—' }}</div>
-            <div class="col-md-6"><strong>Créé le :</strong> {{ $whois['created'] ?? '—' }}</div>
-            <div class="col-md-6"><strong>Expire le :</strong> {{ $whois['expires'] ?? '—' }}</div>
-            <div class="col-md-6"><strong>Statut :</strong> {{ $whois['status'] ?? '—' }}</div>
-            <div class="col-md-6"><strong>Enregistré :</strong> {{ isset($whois['registered']) ? ($whois['registered'] ? 'Oui' : 'Non') : '—' }}</div>
+            <div class="col-md-6"><strong>Domain :</strong> {{ $whois['name'] ?? '—' }}</div>
+            <div class="col-md-6"><strong>Created on:</strong> {{ $whois['created'] ?? '—' }}</div>
+            <div class="col-md-6"><strong>Expires on:</strong> {{ $whois['expires'] ?? '—' }}</div>
+            <div class="col-md-6"><strong>Status :</strong> {{ $whois['status'] ?? '—' }}</div>
+            <div class="col-md-6"><strong>Registered:</strong> {{ isset($whois['registered']) ? ($whois['registered'] ? 'Yes' : 'No') : '—' }}</div>
             <div class="col-md-6"><strong>DNSSEC :</strong> {{ $whois['dnssec'] ?? '—' }}</div>
             <div class="col-md-6"><strong>Registrar :</strong> {{ $registrar['name'] ?? '—' }}</div>
             <div class="col-md-6"><strong>Email :</strong> {{ $registrar['email'] ?? '—' }}</div>

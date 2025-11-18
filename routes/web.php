@@ -82,7 +82,45 @@ Route::middleware('auth')->group(function () {
     Route::get('/projects/{id}', [SeoAnalysisController::class, 'show'])->name('project.show');
     Route::get('/admin/projects/json', [ProjectController::class, 'getProjectsJson'])->name('projects.json');
     Route::get('/test-whois', [WhoisController::class, 'testWhois']);
+    // Dans votre route, ajoutez des vérifications
+
+Route::get('/seo-analysis/{analysis}/pagespeed', function (\App\Models\SeoAnalysis $analysis) {
+    $strategy = request('strategy', 'desktop');
+    
+    $data = [
+        'score' => $analysis->{"pagespeed_{$strategy}_score"},
+        'metrics' => $analysis->{"pagespeed_{$strategy}_metrics"} ?? [],
+        'allScores' => $analysis->{"pagespeed_{$strategy}_scores"} ?? [],
+        'audits' => $analysis->{"pagespeed_{$strategy}_audits"} ?? [],
+        'formFactor' => $analysis->{"pagespeed_{$strategy}_formFactor"},
+    ];
+
+    // Log pour débogage
+    \Log::info("📡 API PageSpeed - Stratégie: $strategy", [
+        'analysis_id' => $analysis->id,
+        'score_present' => !is_null($data['score']),
+        'metrics_count' => count($data['metrics']),
+        'audits_count' => count($data['audits']),
+        'scores_count' => count($data['allScores'])
+    ]);
+
+    return response()->json($data);
+});
+
+    
+    
+    
     
 });
+
+
+
+
+
+
+
+
+
+
 
 require __DIR__.'/auth.php';

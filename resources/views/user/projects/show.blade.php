@@ -31,17 +31,17 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="keywords-tab" data-bs-toggle="tab" data-bs-target="#keywords" type="button" role="tab">
-                        <i class="bi bi-search text-primary me-1"></i>Mots-clés
+                        <i class="bi bi-search text-primary me-1"></i>Keywords
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">
-                        <i class="bi bi-tools text-danger me-1"></i>Audit Technique
+                        <i class="bi bi-tools text-danger me-1"></i>Technical Audit
                     </button>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" id="audit-structure-tab" data-bs-toggle="tab" href="#audit-structure" role="tab" aria-controls="audit-structure" aria-selected="false">
-                        🗂️ Audit Structurel
+                        🗂️ Structural Audit
                     </a>
                 </li>
             </ul>
@@ -238,7 +238,7 @@
 
                 {{-- Audit Structure --}}
                 <div class="tab-pane fade" id="audit-structure" role="tabpanel" aria-labelledby="audit-structure-tab">
-                    <h5 class="mt-3">Structure des balises Hn</h5>
+                    <h5 class="mt-3">Structure of Hn tags</h5>
                     @php
                         try {
                             $headings = json_decode($analysis->headings_structure ?? '[]', true, 512, JSON_THROW_ON_ERROR);
@@ -260,20 +260,20 @@
                         @endforeach
                         @if(!$hasH1)
                             <div class="alert alert-danger">
-                                ⚠️ Aucun &lt;h1&gt; détecté — la structure sémantique est incomplète.
+                                ⚠️ No &lt;h1&gt; detected — the semantic structure is incomplete.
                             </div>
                         @endif
                         <div class="alert alert-secondary">
-                            <strong>Total :</strong> {{ $total }} balises Hn |
-                            <strong>Profondeur moyenne :</strong> {{ round($sumDepth / $total, 1) }} |
-                            <strong>Profondeur max :</strong> {{ $maxDepth }}
+                            <strong>Total :</strong> {{ $total }} Hn tags |
+                            <strong>Average depth:</strong> {{ round($sumDepth / $total, 1) }} |
+                            <strong>Max. depth :</strong> {{ $maxDepth }}
                         </div>
                         <table class="table table-bordered table-sm mt-2">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Tag</th>
-                                    <th>Texte</th>
-                                    <th>Profondeur DOM</th>
+                                    <th>Text</th>
+                                    <th>DOM depth</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -322,21 +322,21 @@
         <div class="glass-card mt-5 pt-4" style="backdrop-filter: blur(12px); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); padding: 2rem; border: 1px solid rgba(255, 255, 255, 0.3);">
            
             <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h4 class="fw-bold mb-0" style=" color:#2e4db6;">🧠 Analyse du contenu principal</h4>
+        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🧠 Main content analysis</h5>
     </div>
             <div class="row">
                 <div class="col-md-12">
                     <div class="p-3 rounded" style="background:#222d40; color: #fff;">
                         @if($analysis->readability_score)
-                            <div class="badge bg-info">Lisibilité : {{ $analysis->readability_score }}%</div>
+                            <div class="badge bg-info">Readability : {{ $analysis->readability_score }}%</div>
                         @endif
                         @php
                             $analysisData = json_decode($analysis->content_analysis, true);
                         @endphp
                         @if(!empty($analysisData['paragraph_count']))
                             <div class="mt-3">
-                                <strong>🧾 Paragraphes extraits :</strong> {{ $analysisData['paragraph_count'] }}<br>
-                                <strong>📌 Paragraphes courts :</strong> {{ $analysisData['short_paragraphs'] }}<br>
+                                <strong>🧾 Paragraphs extracted :</strong> {{ $analysisData['paragraph_count'] }}<br>
+                                <strong>📌 Short paragraphs :</strong> {{ $analysisData['short_paragraphs'] }}<br>
                                 <strong>🔁 Duplications :</strong> {{ count($analysisData['duplicate_paragraphs'] ?? []) }}
                             </div>
                         @endif
@@ -348,8 +348,8 @@
                     <div class="col-md-6">
                         <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
                             <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#mainContentCollapse" aria-expanded="false" aria-controls="mainContentCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>📄 Contenu extrait</span>
-                                <span class="badge bg-light text-dark">Afficher</span>
+                                <span>📄 Extracted content</span>
+                                <span class="badge bg-light text-dark">Display</span>
                             </button>
                             <div class="collapse" id="mainContentCollapse">
                                 <div class="p-3" style="max-height: 400px; overflow-y: auto;">
@@ -371,8 +371,8 @@
                     <div class="col-md-6">
                         <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
                             <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#paragraphCollapse" aria-expanded="false" aria-controls="paragraphCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>🧾 Paragraphes extraits</span>
-                                <span class="badge bg-light text-dark">{{ count($paragraphs) }} affichés</span>
+                                <span>🧾 Paragraphs extracted</span>
+                                <span class="badge bg-light text-dark">{{ count($paragraphs) }} Displayed</span>
                             </button>
                             <div class="collapse" id="paragraphCollapse">
                                 <div class="p-3" style="max-height: 400px; overflow-y: auto;">
@@ -384,7 +384,7 @@
                                             @endphp
                                             <li class="list-group-item bg-transparent {{ $rowClass }}" style="word-break: break-word;">
                                                 {{ $p }}<br>
-                                                <small class="text-muted">{{ $length }} mots</small>
+                                                <small class="text-muted">{{ $length }} words</small>
                                             </li>
                                         @endforeach
                                     </ul>
@@ -401,7 +401,7 @@
                     <div class="col-md-6">
                         <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
                             <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#shortParagraphCollapse" aria-expanded="false" aria-controls="shortParagraphCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>📌 Paragraphes courts</span>
+                                <span>📌 Short Paragraphs</span>
                                 <span class="badge bg-warning text-dark">{{ count($shorts) }}</span>
                             </button>
                             <div class="collapse" id="shortParagraphCollapse">
@@ -427,7 +427,7 @@
                     <div class="col-md-6">
                         <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
                             <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#duplicateParagraphCollapse" aria-expanded="false" aria-controls="duplicateParagraphCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>🔁 Paragraphes dupliqués</span>
+                                <span>🔁 Duplicated paragraphs</span>
                                 <span class="badge bg-danger">{{ count($duplicates) }}</span>
                             </button>
                             <div class="collapse" id="duplicateParagraphCollapse">
@@ -447,7 +447,7 @@
                 @endif
             </div>
         </div>
-    @endif
+    @endif  {{-- ← THIS WAS MISSING --}}
 
        
     <div class="glass-cad mt-5 p-4" style="backdrop-filter: blur(12px); background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000;">
@@ -465,7 +465,7 @@
                 $color = $score >= 60 ? '#00ff99' : ($score >= 40 ? '#ffcc00' : '#ff4d4d');
             @endphp
             <p class="mt-3">
-                <strong style="color: #000;">📊 Lisibilité :</strong>
+                <strong style="color: #000;">📊 Readability :</strong>
                 <span style="color: {{ $color }};">{{ round($score, 1) }} / 100</span>
             </p>
         @endif
@@ -492,25 +492,25 @@
     ">
 
 <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h4 class="fw-bold mb-0" style=" color:#2e4db6;">🔗 PageRank du domaine</h4>
+        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🔗 Domain PageRank</h5>
     </div>
        
 
         <div class="flex items-center space-x-3 text-xl font-bold">
             <span style="color: {{ $color }};">{{ $emoji }} {{ $rank }} / 10</span>
             <span class="text-sm text-muted" style="font-size: 0.85rem;">
-                (selon OpenPageRank)
+            (according to OpenPageRank)
             </span>
         </div>
 
         @if(!is_null($analysis->page_rank_global))
             <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
-                Classement global : <strong>#{{ number_format($analysis->page_rank_global) }}</strong>
+            Overall ranking : <strong>#{{ number_format($analysis->page_rank_global) }}</strong>
             </p>
         @endif
 
         <p class="mt-2 text-muted" style="font-size: 0.85rem;">
-            Ce score reflète la réputation publique du domaine sur le web mondial, calculé à partir de données open source.
+        This score reflects the domain's public reputation on the global web, calculated from open source data.
         </p>
     </div>
 @endif
@@ -520,18 +520,22 @@
 <x-whois-card :analysis="$analysis" />
 <x-analysis-summary :analysis="$analysis" />
 
-<x-page-speed-metrics 
-    :metrics="$analysis->pagespeed_metrics ?? []" 
-    :performanceScore="$analysis->pagespeed_score ?? null"
-    :allScores="$analysis->pagespeed_scores ?? []"
-/>
+<div id="analysis-data" data-analysis-id="{{ $analysis->id }}"></div>
+
+
+<div class="btn-group mb-3" role="group">
+    <button class="btn btn-outline-primary" data-strategy="desktop">🖥️ Desktop</button>
+    <button class="btn btn-outline-warning" data-strategy="mobile">📱 Mobile</button>
+</div>
+<div id="pagespeed-metrics-wrapper"></div>
+<div id="audit-fragments-wrapper"></div>
 
 
 
 
-@if(!empty($auditFragments))
-    <x-pagespeed-audits :auditFragments="$auditFragments" />
-@endif
+
+
+
 
 
 
@@ -555,4 +559,412 @@
 
 
 </div>
+
 @endsection
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const analysisEl = document.getElementById('analysis-data');
+    const metricsWrapper = document.getElementById('pagespeed-metrics-wrapper');
+    const auditsWrapper = document.getElementById('audit-fragments-wrapper');
+
+    if (!analysisEl || !metricsWrapper || !auditsWrapper) {
+        console.warn("⛔ Conteneurs manquants : vérifie les IDs dans Blade.");
+        return;
+    }
+
+    const analysisId = analysisEl.dataset.analysisId;
+    let currentStrategy = 'desktop';
+
+    // 🗄️ SYSTÈME DE CACHE
+    const cache = {
+        desktop: null,
+        mobile: null,
+        timestamp: {
+            desktop: null,
+            mobile: null
+        },
+        
+        // Durée de validité du cache (10 minutes)
+        TTL: 10 * 60 * 1000,
+        
+        // Sauvegarder les données dans le cache
+        set: function(strategy, data) {
+            this[strategy] = data;
+            this.timestamp[strategy] = Date.now();
+            console.log(`💾 Données ${strategy} mises en cache`);
+        },
+        
+        // Récupérer les données du cache
+        get: function(strategy) {
+            if (this[strategy] && this.timestamp[strategy]) {
+                const age = Date.now() - this.timestamp[strategy];
+                if (age < this.TTL) {
+                    console.log(`📦 Données ${strategy} récupérées du cache (âge: ${Math.round(age/1000)}s)`);
+                    return this[strategy];
+                } else {
+                    console.log(`🕒 Cache ${strategy} expiré (âge: ${Math.round(age/1000)}s)`);
+                    this[strategy] = null;
+                }
+            }
+            return null;
+        },
+        
+        // Vérifier si des données sont en cache
+        has: function(strategy) {
+            const cached = this.get(strategy);
+            return cached !== null;
+        },
+        
+        // Vider le cache
+        clear: function(strategy = null) {
+            if (strategy) {
+                this[strategy] = null;
+                this.timestamp[strategy] = null;
+                console.log(`🗑️ Cache ${strategy} vidé`);
+            } else {
+                this.desktop = null;
+                this.mobile = null;
+                this.timestamp.desktop = null;
+                this.timestamp.mobile = null;
+                console.log('🗑️ Tout le cache vidé');
+            }
+        }
+    };
+
+    // Fonction pour mettre à jour l'état visuel des boutons
+    function updateButtonStates(activeStrategy) {
+        document.querySelectorAll('[data-strategy]').forEach(btn => {
+            if (btn.dataset.strategy === activeStrategy) {
+                btn.classList.add('active', 'btn-primary');
+                btn.classList.remove('btn-outline-primary', 'btn-outline-warning');
+            } else {
+                btn.classList.remove('active', 'btn-primary');
+                if (btn.dataset.strategy === 'desktop') {
+                    btn.classList.add('btn-outline-primary');
+                } else {
+                    btn.classList.add('btn-outline-warning');
+                }
+            }
+        });
+    }
+
+    // Gestion des clics sur les boutons
+    document.querySelectorAll('[data-strategy]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentStrategy = this.dataset.strategy;
+            updateButtonStates(currentStrategy);
+            fetchPageSpeed(currentStrategy);
+        });
+    });
+
+    // Fonction principale avec cache
+    function fetchPageSpeed(strategy = 'desktop', forceRefresh = false) {
+        console.log(`🔄 Chargement PageSpeed pour ${strategy}...`, { forceRefresh });
+        
+        // Vérifier le cache d'abord (sauf si forceRefresh)
+        if (!forceRefresh && cache.has(strategy)) {
+            const cachedData = cache.get(strategy);
+            console.log('✅ Utilisation des données en cache');
+            displayData(strategy, cachedData);
+            return;
+        }
+
+        // Si pas en cache ou forceRefresh, faire l'appel API
+        const endpoint = `/seo-analysis/${analysisId}/pagespeed?strategy=${strategy}`;
+        
+        // Afficher loading
+        showLoading(strategy);
+        
+        fetch(endpoint)
+            .then(response => {
+                console.log(`📡 Réponse HTTP reçue - Status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(`📊 Données brutes reçues pour ${strategy}:`, data);
+                
+                // Mettre en cache les données valides
+                if (data.score !== null && data.metrics && data.audits) {
+                    cache.set(strategy, data);
+                }
+                
+                // Afficher les données
+                displayData(strategy, data);
+            })
+            .catch(error => {
+                console.error('❌ Erreur AJAX PageSpeed:', error);
+                
+                // En cas d'erreur, essayer d'afficher les données en cache si disponibles
+                if (cache.has(strategy)) {
+                    console.log('🔄 Fallback sur les données en cache suite à une erreur');
+                    const cachedData = cache.get(strategy);
+                    displayData(strategy, cachedData);
+                } else {
+                    showError(strategy, error);
+                }
+            });
+    }
+
+    // Fonction pour afficher le loading
+    function showLoading(strategy) {
+        metricsWrapper.innerHTML = `<div class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <p class="text-muted mt-2">Chargement des données ${strategy}...</p>
+        </div>`;
+        auditsWrapper.innerHTML = '';
+    }
+
+    // Fonction pour afficher les erreurs
+    function showError(strategy, error) {
+        metricsWrapper.innerHTML = `
+            <div class="alert alert-danger">
+                <p>Erreur lors du chargement des métriques ${strategy}</p>
+                <small>${error.message}</small>
+                <div class="mt-2">
+                    <button class="btn btn-primary btn-sm" onclick="fetchPageSpeed('${strategy}', true)">
+                        Réessayer
+                    </button>
+                    <button class="btn btn-secondary btn-sm ms-2" onclick="clearCache('${strategy}')">
+                        Vider le cache
+                    </button>
+                </div>
+            </div>
+        `;
+        auditsWrapper.innerHTML = '';
+    }
+
+    // Fonction pour afficher les données
+    function displayData(strategy, data) {
+        console.log('🔍 DIAGNOSTIC DES DONNÉES:');
+        console.log('✅ Score présent:', data.score !== null && data.score !== undefined, 'Valeur:', data.score);
+        console.log('✅ Métriques présentes:', data.metrics && Object.keys(data.metrics).length > 0, 'Nombre:', data.metrics ? Object.keys(data.metrics).length : 0);
+        console.log('✅ AllScores présents:', data.allScores && Object.keys(data.allScores).length > 0, 'Nombre:', data.allScores ? Object.keys(data.allScores).length : 0);
+        console.log('✅ Audits présents:', data.audits && Object.keys(data.audits).length > 0, 'Nombre:', data.audits ? Object.keys(data.audits).length : 0);
+        console.log('✅ FormFactor présent:', data.formFactor, 'Valeur:', data.formFactor);
+
+        const scoreReady = data.score !== null && data.score !== undefined;
+        const metricsReady = data.metrics && Object.keys(data.metrics).length > 0;
+        const scoresReady = data.allScores && Object.keys(data.allScores).length > 0;
+        const auditsReady = data.audits && Object.keys(data.audits).length > 0;
+
+        if (scoreReady && metricsReady && scoresReady) {
+            console.log('🎯 Rendu des métriques...');
+            metricsWrapper.innerHTML = renderMetricsHTML({
+                performanceScore: data.score,
+                allScores: data.allScores,
+                metrics: data.metrics,
+                formFactor: data.formFactor
+            });
+        } else {
+            console.warn('⏳ Données métriques incomplètes:', {
+                scoreReady, 
+                metricsReady, 
+                scoresReady
+            });
+            metricsWrapper.innerHTML = `
+                <div class="alert alert-warning">
+                    <p>Données PageSpeed en cours de traitement pour ${strategy}</p>
+                    <small>Score: ${data.score ?? 'N/A'}</small><br>
+                    <small>Métriques: ${metricsReady ? 'Présentes' : 'Absentes'}</small><br>
+                    <small>Scores: ${scoresReady ? 'Présents' : 'Absents'}</small>
+                    <div class="mt-2">
+                        <button class="btn btn-primary btn-sm" onclick="fetchPageSpeed('${strategy}', true)">
+                            Actualiser
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (auditsReady) {
+            console.log('🎯 Rendu des audits...');
+            auditsWrapper.innerHTML = renderAuditHTML(data.audits);
+        } else {
+            console.warn('⏳ Données audits incomplètes');
+            auditsWrapper.innerHTML = `
+                <div class="alert alert-info">
+                    <p>Audits en cours de traitement pour ${strategy}</p>
+                    <small>Nombre d'audits: ${data.audits ? Object.keys(data.audits).length : 0}</small>
+                </div>
+            `;
+        }
+
+        // Ajouter un badge pour indiquer la source (cache ou API)
+        const sourceBadge = cache.has(strategy) ? 
+            '<span class="badge bg-success ms-2">📦 Cache</span>' : 
+            '<span class="badge bg-primary ms-2">🌐 Live</span>';
+        
+        const badgeElement = metricsWrapper.querySelector('.badge');
+        if (badgeElement) {
+            badgeElement.insertAdjacentHTML('afterend', sourceBadge);
+        }
+    }
+
+    // Fonctions de rendu (gardez vos fonctions existantes)
+    function renderMetricsHTML(data) {
+        const { performanceScore, allScores, metrics, formFactor } = data;
+        let html = `<div class="page-speed-metrics mb-4">`;
+
+        // Badge stratégie
+        if (formFactor) {
+            const icon = formFactor === 'mobile' ? '📱' : '🖥️';
+            const badgeClass = formFactor === 'mobile' ? 'badge-warning' : 'badge-primary';
+            html += `
+            <div class="mb-3">
+                <span class="badge ${badgeClass} text-dark">${icon} Strategy : ${capitalize(formFactor)}</span>
+            </div>`;
+        }
+
+        if (allScores && Object.keys(allScores).length > 0) {
+            html += `
+            <div class="scores-grid mb-4">
+                <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+                    <h5 class="fw-bold mb-0" style="color:#2e4db6;">PageSpeed Score</h5>
+                </div>
+                <div class="row">`;
+
+            html += renderScoreCard('Performance', performanceScore);
+
+            for (const [category, score] of Object.entries(allScores)) {
+                if (category !== 'performance') {
+                    html += renderScoreCard(category, score);
+                }
+            }
+
+            html += `</div></div>`;
+        }
+
+        if (metrics && Object.keys(metrics).length > 0) {
+            html += `
+            <div class="metrics-section">
+                <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+                    <h5 class="fw-bold mb-0" style="color:#2e4db6;">Core Web Vitals</h5>
+                </div>
+                <div class="metrics-grid">`;
+
+            for (const metric of Object.values(metrics)) {
+                if (!metric.title) continue;
+                const score = metric.score ?? null;
+                const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
+                html += `
+                <div class="metric-item">
+                    <div class="metric-header">
+                        <span class="metric-name">${metric.title}</span>
+                        ${score !== null ? `<span class="metric-score badge badge-${badge}">${Math.round(score * 100)}%</span>` : ''}
+                    </div>
+                    <span class="metric-value">${metric.displayValue ?? 'N/A'}</span>
+                    ${score !== null ? `
+                    <div class="metric-progress">
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
+                        </div>
+                    </div>` : ''}
+                </div>`;
+            }
+
+            html += `</div></div>`;
+        } else {
+            html += `<p class="text-muted">Metrics loading...</p>`;
+        }
+
+        html += `</div>`;
+        return html;
+    }
+
+    function renderScoreCard(category, score) {
+        const badge = score >= 90 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-danger';
+        const label = score >= 90 ? 'Excellent' : score >= 50 ? 'Good' : 'Low';
+        return `
+        <div class="col-md-3 col-6 mb-3">
+            <div class="score-card text-center p-3">
+                <div class="score-category">${capitalize(category)}</div>
+                <div class="score-value h3 ${badge}">${score ?? 'N/A'}</div>
+                <div class="score-label">/100</div>
+                <small class="${badge}">${label}</small>
+            </div>
+        </div>`;
+    }
+
+    function renderAuditHTML(audits) {
+        let html = `<div class="pagespeed-audits glass-card p-4 mb-4">`;
+
+        const sections = {
+            opportunities: '⚡ Opportunities For Optimization',
+            diagnostics: '🔍 Technical Diagnostics',
+            informative: '📘 Informative Audits'
+        };
+
+        for (const [type, items] of Object.entries(audits)) {
+            if (!items || items.length === 0) continue;
+
+            html += `
+            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+                <h5 class="fw-bold mb-0" style="color:#2e4db6;">${sections[type]}</h5>
+            </div>
+            <div class="audit-grid mb-4">`;
+
+            for (const audit of items) {
+                const score = audit.score ?? null;
+                const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
+                html += `
+                <div class="audit-card">
+                    <div class="audit-header">
+                        <span class="audit-title">${audit.title}</span>
+                        ${type === 'opportunities' && audit.estimatedSavingsMs ? `<span class="badge badge-info">+${(audit.estimatedSavingsMs / 1000).toFixed(2)}s</span>` : ''}
+                        ${score !== null && type !== 'informative' ? `<span class="badge badge-${badge}">${Math.round(score * 100)}%</span>` : ''}
+                    </div>
+                    <div class="audit-body">
+                        <p class="audit-description">${audit.description}</p>
+                        ${audit.displayValue ? `<p class="audit-value text-muted">Mesure : ${audit.displayValue}</p>` : ''}
+                        ${score !== null && type === 'opportunities' ? `
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
+                        </div>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+        return html;
+    }
+
+    function capitalize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Rendre les fonctions globales pour les boutons
+    window.fetchPageSpeed = fetchPageSpeed;
+    window.clearCache = function(strategy = null) {
+        cache.clear(strategy);
+        if (strategy) {
+            fetchPageSpeed(strategy, true);
+        } else {
+            fetchPageSpeed(currentStrategy, true);
+        }
+    };
+
+    // 🚀 CHARGEMENT AUTOMATIQUE AU DÉMARRAGE
+    console.log('🚀 Chargement automatique avec cache...');
+    updateButtonStates('desktop');
+    fetchPageSpeed('desktop');
+});
+
+    
+</script>
+
+
+
+
+
+

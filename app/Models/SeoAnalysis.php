@@ -55,6 +55,20 @@ class SeoAnalysis extends Model
         'accessibility_description',
         'accessibility_manual',
         'pagespeed_audits',
+        // COLONNES PAGESPEED STRATÉGIE DESKTOP
+        'pagespeed_desktop_score',
+        'pagespeed_desktop_metrics',
+        'pagespeed_desktop_audits',
+        'pagespeed_desktop_scores',     // 🔥 À AJOUTER
+        'pagespeed_desktop_formFactor',
+        
+        // COLONNES PAGESPEED STRATÉGIE MOBILE  
+        'pagespeed_mobile_score',       // 🔥 À AJOUTER
+        'pagespeed_mobile_metrics',
+        'pagespeed_mobile_audits',
+        'pagespeed_mobile_scores',      // 🔥 À AJOUTER
+        'pagespeed_mobile_formFactor',  // 🔥 À AJOUTER
+    
 
 
     ];
@@ -87,6 +101,19 @@ class SeoAnalysis extends Model
     'pagespeed_metrics' => 'array',
     'pagespeed_scores' => 'array',
     'pagespeed_audits' => 'array', // ✅ indispensable
+     // CASTS PAGESPEED STRATÉGIE DESKTOP
+     'pagespeed_desktop_score' => 'integer',         // 🔥 À AJOUTER
+     'pagespeed_desktop_metrics' => 'array',
+     'pagespeed_desktop_audits' => 'array',
+     'pagespeed_desktop_scores' => 'array',          // 🔥 À AJOUTER
+     'pagespeed_desktop_formFactor' => 'string',     // 🔥 À AJOUTER
+     
+     // CASTS PAGESPEED STRATÉGIE MOBILE
+     'pagespeed_mobile_score' => 'integer',          // 🔥 À AJOUTER
+     'pagespeed_mobile_metrics' => 'array',
+     'pagespeed_mobile_audits' => 'array',
+     'pagespeed_mobile_scores' => 'array',
+     'pagespeed_mobile_formFactor' => 'string',      // 🔥 À AJOUTER
 
     ];
 

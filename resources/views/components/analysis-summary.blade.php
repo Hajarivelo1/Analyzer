@@ -54,16 +54,16 @@
 
 <div class="glass-card p-4 mb-4">
 <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h4 class="fw-bold mb-0" style=" color:#2e4db6;">🧠 Codex Summary</h4>
+        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🧠 Codex Summary</h5>
     </div>
 
     <div class="mb-3">
-        <span class="badge bg-{{ $color }} px-3 py-2 me-2">Score SEO : {{ $score }}/100</span>
+        <span class="badge bg-{{ $color }} px-3 py-2 me-2">SEO Score : {{ $score }}/100</span>
         <span class="text-muted">Status : <strong>{{ ucfirst($status) }}</strong></span>
     </div>
 
     <div class="mb-3">
-        <h6 class="fw-bold">🔠 Balises détectées</h6>
+        <h6 class="fw-bold">🔠 Tags detected</h6>
         <ul class="list-inline">
             @foreach ($hCounts as $tag => $count)
                 <li class="list-inline-item badge bg-light text-dark me-1">{{ strtoupper($tag) }} : {{ $count }}</li>
@@ -72,20 +72,20 @@
     </div>
 
     <div class="mb-3">
-        <h6 class="fw-bold">🔑 Top 5 mots-clés</h6>
+        <h6 class="fw-bold">🔑 Top 5 keywords</h6>
         <ul class="list-inline">
             @forelse ($keywords as $word => $freq)
                 <li class="list-inline-item badge bg-info text-dark me-1">{{ $word }} ({{ $freq }})</li>
             @empty
-                <li class="text-muted">Aucun mot-clé significatif détecté.</li>
+                <li class="text-muted">No significant keywords detected.</li>
             @endforelse
         </ul>
     </div>
 
     <div class="mb-3">
-        <h6 class="fw-bold">🌐 WHOIS & Réseau</h6>
+        <h6 class="fw-bold">🌐 WHOIS & Network</h6>
         <ul class="list-unstyled ms-2">
-            <li><strong>Domaine :</strong> {{ $whois['name'] ?? '—' }}</li>
+            <li><strong>Domain :</strong> {{ $whois['name'] ?? '—' }}</li>
             <li><strong>PageRank :</strong> {{ $pagerank ?? '—' }}</li>
             <li><strong>Cloudflare :</strong> {{ $cloudflare }}</li>
             <li><strong>SSL :</strong> {{ $ssl }}</li>
