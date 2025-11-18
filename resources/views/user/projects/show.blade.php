@@ -309,11 +309,11 @@
     @if($analysis && ($analysis->cloudflare_blocked || empty($analysis->main_content)))
 
         <div class="alert alert-warning">
-            ⚠️ Le contenu principal n’a pas pu être extrait.
+            ⚠️ The main content could not be extracted.
             @if($analysis->cloudflare_blocked)
-                Il semble que le site soit protégé par <strong>Cloudflare</strong>.
+            It seems that the website is protected by<strong>Cloudflare</strong>.
             @else
-                Aucun contenu exploitable n’a été trouvé sur la page.
+            No useful information was found on this page.
             @endif
         </div>
     @endif
@@ -525,7 +525,7 @@
 
 <div class="btn-group mb-3" role="group">
     <button class="btn btn-outline-primary" data-strategy="desktop">🖥️ Desktop</button>
-    <button class="btn btn-outline-warning" data-strategy="mobile">📱 Mobile</button>
+    <button class="btn btn-outline-warnin" style="color:#000; border: 1px solid #000;" data-strategy="mobile">📱 Mobile</button>
 </div>
 <div id="pagespeed-metrics-wrapper"></div>
 <div id="audit-fragments-wrapper"></div>
@@ -565,7 +565,7 @@
 
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
     const analysisEl = document.getElementById('analysis-data');
     const metricsWrapper = document.getElementById('pagespeed-metrics-wrapper');
     const auditsWrapper = document.getElementById('audit-fragments-wrapper');
@@ -577,6 +577,8 @@
 
     const analysisId = analysisEl.dataset.analysisId;
     let currentStrategy = 'desktop';
+    let isWatching = false;
+    let watchInterval = null;
 
     // 🗄️ SYSTÈME DE CACHE
     const cache = {
@@ -586,39 +588,33 @@
             desktop: null,
             mobile: null
         },
-        
-        // Durée de validité du cache (10 minutes)
         TTL: 10 * 60 * 1000,
         
-        // Sauvegarder les données dans le cache
         set: function(strategy, data) {
             this[strategy] = data;
             this.timestamp[strategy] = Date.now();
             console.log(`💾 Données ${strategy} mises en cache`);
         },
         
-        // Récupérer les données du cache
         get: function(strategy) {
             if (this[strategy] && this.timestamp[strategy]) {
                 const age = Date.now() - this.timestamp[strategy];
                 if (age < this.TTL) {
-                    console.log(`📦 Données ${strategy} récupérées du cache (âge: ${Math.round(age/1000)}s)`);
+                    console.log(`📦 Données ${strategy} du cache (${Math.round(age/1000)}s)`);
                     return this[strategy];
                 } else {
-                    console.log(`🕒 Cache ${strategy} expiré (âge: ${Math.round(age/1000)}s)`);
+                    console.log(`🕒 Cache ${strategy} expiré`);
                     this[strategy] = null;
                 }
             }
             return null;
         },
         
-        // Vérifier si des données sont en cache
         has: function(strategy) {
             const cached = this.get(strategy);
             return cached !== null;
         },
         
-        // Vider le cache
         clear: function(strategy = null) {
             if (strategy) {
                 this[strategy] = null;
@@ -629,12 +625,75 @@
                 this.mobile = null;
                 this.timestamp.desktop = null;
                 this.timestamp.mobile = null;
-                console.log('🗑️ Tout le cache vidé');
+                console.log('🗑️ Cache vidé');
             }
         }
     };
 
-    // Fonction pour mettre à jour l'état visuel des boutons
+    // 🔍 SURVEILLANCE AUTOMATIQUE
+    function startWatching() {
+        if (isWatching) return;
+        
+        isWatching = true;
+        console.log('🔍 Surveillance automatique activée');
+        
+        // Vérifier immédiatement
+        checkPageSpeedStatus();
+        
+        // Puis toutes les 5 secondes
+        watchInterval = setInterval(() => {
+            checkPageSpeedStatus();
+        }, 5000);
+    }
+
+    function stopWatching() {
+        isWatching = false;
+        if (watchInterval) {
+            clearInterval(watchInterval);
+            watchInterval = null;
+            console.log('⏹️ Surveillance arrêtée');
+        }
+    }
+
+    function checkPageSpeedStatus() {
+        fetch(`/seo-analysis/${analysisId}/status`)
+            .then(response => {
+                if (!response.ok) throw new Error('Statut HTTP invalide');
+                return response.json();
+            })
+            .then(data => {
+                console.log('📊 Statut:', data);
+                
+                const desktopReady = data.desktop_ready && data.desktop_score !== null;
+                const mobileReady = data.mobile_ready && data.mobile_score !== null;
+                
+                if (desktopReady) {
+                    console.log('✅ Données Desktop prêtes !');
+                    stopWatching();
+                    showNotification('✅ Données Desktop disponibles', 'success');
+                    
+                    // Recharger les données si on est sur desktop
+                    if (currentStrategy === 'desktop') {
+                        fetchPageSpeed('desktop', false, true);
+                    }
+                }
+                
+                if (mobileReady) {
+                    console.log('✅ Données Mobile prêtes !');
+                    // Ne pas stopWatching() ici pour laisser Desktop se déclencher si besoin
+                    showNotification('✅ Données Mobile disponibles', 'success');
+                }
+            })
+            .catch(error => {
+                console.log('❌ Erreur surveillance:', error);
+            });
+    }
+
+    function showNotification(message, type = 'info') {
+        // Notification simple
+        console.log(`📢 ${message}`);
+    }
+
     function updateButtonStates(activeStrategy) {
         document.querySelectorAll('[data-strategy]').forEach(btn => {
             if (btn.dataset.strategy === activeStrategy) {
@@ -651,7 +710,6 @@
         });
     }
 
-    // Gestion des clics sur les boutons
     document.querySelectorAll('[data-strategy]').forEach(btn => {
         btn.addEventListener('click', function() {
             currentStrategy = this.dataset.strategy;
@@ -660,49 +718,42 @@
         });
     });
 
-    // Fonction principale avec cache
-    function fetchPageSpeed(strategy = 'desktop', forceRefresh = false) {
-        console.log(`🔄 Chargement PageSpeed pour ${strategy}...`, { forceRefresh });
+    function fetchPageSpeed(strategy = 'desktop', forceRefresh = false, silent = false) {
+        console.log(`🔄 Chargement ${strategy}...`, { forceRefresh, silent });
         
-        // Vérifier le cache d'abord (sauf si forceRefresh)
         if (!forceRefresh && cache.has(strategy)) {
             const cachedData = cache.get(strategy);
-            console.log('✅ Utilisation des données en cache');
+            console.log('✅ Utilisation du cache');
             displayData(strategy, cachedData);
             return;
         }
 
-        // Si pas en cache ou forceRefresh, faire l'appel API
         const endpoint = `/seo-analysis/${analysisId}/pagespeed?strategy=${strategy}`;
         
-        // Afficher loading
-        showLoading(strategy);
+        if (!silent) {
+            showLoading(strategy);
+        }
         
         fetch(endpoint)
             .then(response => {
-                console.log(`📡 Réponse HTTP reçue - Status: ${response.status}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                console.log(`📡 Réponse HTTP: ${response.status}`);
+                if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
                 return response.json();
             })
             .then(data => {
-                console.log(`📊 Données brutes reçues pour ${strategy}:`, data);
+                console.log(`📊 Données reçues pour ${strategy}:`, data);
                 
-                // Mettre en cache les données valides
                 if (data.score !== null && data.metrics && data.audits) {
                     cache.set(strategy, data);
                 }
                 
-                // Afficher les données
                 displayData(strategy, data);
             })
             .catch(error => {
-                console.error('❌ Erreur AJAX PageSpeed:', error);
+                console.error('❌ Erreur:', error);
                 
-                // En cas d'erreur, essayer d'afficher les données en cache si disponibles
                 if (cache.has(strategy)) {
-                    console.log('🔄 Fallback sur les données en cache suite à une erreur');
+                    console.log('🔄 Fallback sur le cache');
                     const cachedData = cache.get(strategy);
                     displayData(strategy, cachedData);
                 } else {
@@ -711,29 +762,24 @@
             });
     }
 
-    // Fonction pour afficher le loading
     function showLoading(strategy) {
         metricsWrapper.innerHTML = `<div class="text-center p-4">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Chargement...</span>
             </div>
-            <p class="text-muted mt-2">Chargement des données ${strategy}...</p>
+            <p class="text-muted mt-2">Chargement ${strategy}...</p>
         </div>`;
         auditsWrapper.innerHTML = '';
     }
 
-    // Fonction pour afficher les erreurs
     function showError(strategy, error) {
         metricsWrapper.innerHTML = `
             <div class="alert alert-danger">
-                <p>Erreur lors du chargement des métriques ${strategy}</p>
+                <p>Erreur ${strategy}</p>
                 <small>${error.message}</small>
                 <div class="mt-2">
                     <button class="btn btn-primary btn-sm" onclick="fetchPageSpeed('${strategy}', true)">
                         Réessayer
-                    </button>
-                    <button class="btn btn-secondary btn-sm ms-2" onclick="clearCache('${strategy}')">
-                        Vider le cache
                     </button>
                 </div>
             </div>
@@ -741,16 +787,13 @@
         auditsWrapper.innerHTML = '';
     }
 
-    // Fonction pour afficher les données
     function displayData(strategy, data) {
-        console.log('🔍 DIAGNOSTIC DES DONNÉES:');
-        console.log('✅ Score présent:', data.score !== null && data.score !== undefined, 'Valeur:', data.score);
-        console.log('✅ Métriques présentes:', data.metrics && Object.keys(data.metrics).length > 0, 'Nombre:', data.metrics ? Object.keys(data.metrics).length : 0);
-        console.log('✅ AllScores présents:', data.allScores && Object.keys(data.allScores).length > 0, 'Nombre:', data.allScores ? Object.keys(data.allScores).length : 0);
-        console.log('✅ Audits présents:', data.audits && Object.keys(data.audits).length > 0, 'Nombre:', data.audits ? Object.keys(data.audits).length : 0);
-        console.log('✅ FormFactor présent:', data.formFactor, 'Valeur:', data.formFactor);
+        console.log('🔍 DIAGNOSTIC:');
+        console.log('✅ Score:', data.score !== null, data.score);
+        console.log('✅ Métriques:', data.metrics && Object.keys(data.metrics).length);
+        console.log('✅ Audits:', data.audits && Object.keys(data.audits).length);
 
-        const scoreReady = data.score !== null && data.score !== undefined;
+        const scoreReady = data.score !== null;
         const metricsReady = data.metrics && Object.keys(data.metrics).length > 0;
         const scoresReady = data.allScores && Object.keys(data.allScores).length > 0;
         const auditsReady = data.audits && Object.keys(data.audits).length > 0;
@@ -764,22 +807,14 @@
                 formFactor: data.formFactor
             });
         } else {
-            console.warn('⏳ Données métriques incomplètes:', {
-                scoreReady, 
-                metricsReady, 
-                scoresReady
-            });
+            console.warn('⏳ Données incomplètes');
             metricsWrapper.innerHTML = `
                 <div class="alert alert-warning">
-                    <p>Données PageSpeed en cours de traitement pour ${strategy}</p>
+                    <p>Data being processed for ${strategy}</p>
                     <small>Score: ${data.score ?? 'N/A'}</small><br>
-                    <small>Métriques: ${metricsReady ? 'Présentes' : 'Absentes'}</small><br>
-                    <small>Scores: ${scoresReady ? 'Présents' : 'Absents'}</small>
-                    <div class="mt-2">
-                        <button class="btn btn-primary btn-sm" onclick="fetchPageSpeed('${strategy}', true)">
-                            Actualiser
-                        </button>
-                    </div>
+                    <button class="btn btn-primary btn-sm mt-2" onclick="fetchPageSpeed('${strategy}', true)">
+                        Refresh
+                    </button>
                 </div>
             `;
         }
@@ -788,38 +823,25 @@
             console.log('🎯 Rendu des audits...');
             auditsWrapper.innerHTML = renderAuditHTML(data.audits);
         } else {
-            console.warn('⏳ Données audits incomplètes');
+            console.warn('⏳ Audits incomplets');
             auditsWrapper.innerHTML = `
                 <div class="alert alert-info">
-                    <p>Audits en cours de traitement pour ${strategy}</p>
-                    <small>Nombre d'audits: ${data.audits ? Object.keys(data.audits).length : 0}</small>
+                    <p>Audits en cours de traitement</p>
                 </div>
             `;
         }
-
-        // Ajouter un badge pour indiquer la source (cache ou API)
-        const sourceBadge = cache.has(strategy) ? 
-            '<span class="badge bg-success ms-2">📦 Cache</span>' : 
-            '<span class="badge bg-primary ms-2">🌐 Live</span>';
-        
-        const badgeElement = metricsWrapper.querySelector('.badge');
-        if (badgeElement) {
-            badgeElement.insertAdjacentHTML('afterend', sourceBadge);
-        }
     }
 
-    // Fonctions de rendu (gardez vos fonctions existantes)
     function renderMetricsHTML(data) {
         const { performanceScore, allScores, metrics, formFactor } = data;
         let html = `<div class="page-speed-metrics mb-4">`;
 
-        // Badge stratégie
         if (formFactor) {
             const icon = formFactor === 'mobile' ? '📱' : '🖥️';
             const badgeClass = formFactor === 'mobile' ? 'badge-warning' : 'badge-primary';
             html += `
             <div class="mb-3">
-                <span class="badge ${badgeClass} text-dark">${icon} Strategy : ${capitalize(formFactor)}</span>
+                <span class="badge ${badgeClass} text-dark">${icon} ${capitalize(formFactor)}</span>
             </div>`;
         }
 
@@ -858,21 +880,17 @@
                 <div class="metric-item">
                     <div class="metric-header">
                         <span class="metric-name">${metric.title}</span>
-                        ${score !== null ? `<span class="metric-score badge badge-${badge}">${Math.round(score * 100)}%</span>` : ''}
+                        ${score !== null ? `<span class="badge badge-${badge}">${Math.round(score * 100)}%</span>` : ''}
                     </div>
                     <span class="metric-value">${metric.displayValue ?? 'N/A'}</span>
                     ${score !== null ? `
-                    <div class="metric-progress">
-                        <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
-                        </div>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
                     </div>` : ''}
                 </div>`;
             }
 
             html += `</div></div>`;
-        } else {
-            html += `<p class="text-muted">Metrics loading...</p>`;
         }
 
         html += `</div>`;
@@ -881,7 +899,7 @@
 
     function renderScoreCard(category, score) {
         const badge = score >= 90 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-danger';
-        const label = score >= 90 ? 'Excellent' : score >= 50 ? 'Good' : 'Low';
+        const label = score >= 90 ? 'Excellent' : score >= 50 ? 'Good' : 'Poor';
         return `
         <div class="col-md-3 col-6 mb-3">
             <div class="score-card text-center p-3">
@@ -894,56 +912,104 @@
     }
 
     function renderAuditHTML(audits) {
-        let html = `<div class="pagespeed-audits glass-card p-4 mb-4">`;
+    let html = `<div class="pagespeed-audits">`;
 
-        const sections = {
-            opportunities: '⚡ Opportunities For Optimization',
-            diagnostics: '🔍 Technical Diagnostics',
-            informative: '📘 Informative Audits'
-        };
+    const sections = {
+        opportunities: { 
+            title: 'Opportunities For Optimization', 
+            icon: '⚡',
+            color: 'warning'
+        },
+        diagnostics: { 
+            title: 'Technical Diagnostics', 
+            icon: '🔍',
+            color: 'info'
+        },
+        informative: { 
+            title: 'Informative Audits', 
+            icon: '📘',
+            color: 'secondary'
+        }
+    };
 
-        for (const [type, items] of Object.entries(audits)) {
-            if (!items || items.length === 0) continue;
+    let accordionId = 0;
 
+    for (const [type, items] of Object.entries(audits)) {
+        if (!items || items.length === 0) continue;
+
+        accordionId++;
+        const section = sections[type];
+        const accordionSectionId = `accordion-${type}-${accordionId}`;
+        const collapseId = `collapse-${type}-${accordionId}`;
+
+        html += `
+        <div class="accordion audit-accordion mb-3" id="${accordionSectionId}">
+            <div class="accordion-item border-${section.color}">
+                <h2 class="accordion-header" id="heading-${type}">
+                    <button class="accordion-button ${section.color} ${accordionId === 1 ? '' : 'collapsed'}" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#${collapseId}" 
+                            aria-expanded="${accordionId === 1 ? 'true' : 'false'}" 
+                            aria-controls="${collapseId}">
+                        <span class="d-flex align-items-center w-100">
+                            <span class="accordion-icon me-2">${section.icon}</span>
+                            <span class="accordion-title flex-grow-1">${section.title}</span>
+                            <span class="badge bg-${section.color} ms-2">${items.length}</span>
+                            <span class="accordion-arrow ms-2">▼</span>
+                        </span>
+                    </button>
+                </h2>
+                <div id="${collapseId}" 
+                     class="accordion-collapse collapse ${accordionId === 1 ? 'show' : ''}" 
+                     aria-labelledby="heading-${type}" 
+                     data-bs-parent="#${accordionSectionId}">
+                    <div class="accordion-body p-3">
+                        <div class="audit-grid">`;
+
+        for (const audit of items) {
+            const score = audit.score ?? null;
+            const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
+            
             html += `
-            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-                <h5 class="fw-bold mb-0" style="color:#2e4db6;">${sections[type]}</h5>
-            </div>
-            <div class="audit-grid mb-4">`;
-
-            for (const audit of items) {
-                const score = audit.score ?? null;
-                const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
-                html += `
-                <div class="audit-card">
-                    <div class="audit-header">
-                        <span class="audit-title">${audit.title}</span>
-                        ${type === 'opportunities' && audit.estimatedSavingsMs ? `<span class="badge badge-info">+${(audit.estimatedSavingsMs / 1000).toFixed(2)}s</span>` : ''}
-                        ${score !== null && type !== 'informative' ? `<span class="badge badge-${badge}">${Math.round(score * 100)}%</span>` : ''}
-                    </div>
-                    <div class="audit-body">
-                        <p class="audit-description">${audit.description}</p>
-                        ${audit.displayValue ? `<p class="audit-value text-muted">Mesure : ${audit.displayValue}</p>` : ''}
-                        ${score !== null && type === 'opportunities' ? `
-                        <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
-                        </div>` : ''}
-                    </div>
-                </div>`;
-            }
-
-            html += `</div>`;
+                            <div class="audit-card">
+                                <div class="audit-header">
+                                    <span class="audit-title">${audit.title}</span>
+                                    <div class="audit-badges">
+                                        ${type === 'opportunities' && audit.estimatedSavingsMs ? 
+                                          `<span class="badge bg-info mb-1">+${(audit.estimatedSavingsMs / 1000).toFixed(2)}s</span>` : ''}
+                                        ${score !== null && type !== 'informative' ? 
+                                          `<span class="badge bg-${badge}">${Math.round(score * 100)}%</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="audit-body">
+                                    <p class="audit-description">${audit.description || 'No description available'}</p>
+                                    ${audit.displayValue ? `<p class="audit-value">${audit.displayValue}</p>` : ''}
+                                    ${score !== null && type === 'opportunities' ? `
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
+                                    </div>` : ''}
+                                </div>
+                            </div>`;
         }
 
-        html += `</div>`;
-        return html;
+        html += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
     }
+
+    html += `</div>`;
+    return html;
+}
+
 
     function capitalize(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
-    // Rendre les fonctions globales pour les boutons
     window.fetchPageSpeed = fetchPageSpeed;
     window.clearCache = function(strategy = null) {
         cache.clear(strategy);
@@ -954,14 +1020,18 @@
         }
     };
 
-    // 🚀 CHARGEMENT AUTOMATIQUE AU DÉMARRAGE
-    console.log('🚀 Chargement automatique avec cache...');
+    // 🚀 DÉMARRAGE
+    console.log('🚀 Chargement initial...');
     updateButtonStates('desktop');
     fetchPageSpeed('desktop');
-});
-
     
+    // Démarrer la surveillance après un délai
+    setTimeout(() => {
+        startWatching();
+    }, 2000);
+});
 </script>
+
 
 
 

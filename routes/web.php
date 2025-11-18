@@ -84,6 +84,28 @@ Route::middleware('auth')->group(function () {
     Route::get('/test-whois', [WhoisController::class, 'testWhois']);
     // Dans votre route, ajoutez des vérifications
 
+
+    // 🔄 NOUVELLE ROUTE DE STATUT (AJOUTÉE ICI)
+    Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis $analysis) {
+        \Log::info('🔍 Statut PageSpeed demandé', [
+            'analysis_id' => $analysis->id,
+            'desktop_score' => $analysis->pagespeed_desktop_score,
+            'mobile_score' => $analysis->pagespeed_mobile_score
+        ]);
+        
+        return response()->json([
+            'desktop_ready' => !empty($analysis->pagespeed_desktop_score),
+            'mobile_ready' => !empty($analysis->pagespeed_mobile_score),
+            'desktop_score' => $analysis->pagespeed_desktop_score,
+            'mobile_score' => $analysis->pagespeed_mobile_score,
+            'desktop_updated' => $analysis->updated_at->toDateTimeString(),
+        ]);
+    });
+
+
+
+
+
 Route::get('/seo-analysis/{analysis}/pagespeed', function (\App\Models\SeoAnalysis $analysis) {
     $strategy = request('strategy', 'desktop');
     

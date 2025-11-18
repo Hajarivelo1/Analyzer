@@ -68,25 +68,25 @@
         <!-- Forms Section -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="glass-card rounded-3 border border-white/20 backdrop-blur-xl p-4" >
+                <div class="glass-card rounded-3 border border-white/20 backdrop-blur-xl p-4">
                     <!-- New Project Form -->
                     <div id="new-project-form" style="display: none;">
                         <h3 class="text-dark fw-bold mb-4">Create New Project</h3>
-                        <form id="new-project-form-element" action="{{ route('analysis.run') }}" method="POST">
+                        <form id="new-project-form-element" action="{{ route('analysis.run') }}" method="POST" onsubmit="return validateNewProjectForm(event)">
                             @csrf
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label text-gray-300">Project Name</label>
-                                    <input type="text" name="name" class="form-control personal-info-input" 
+                                    <input type="text" name="name" id="new-project-name" class="form-control personal-info-input" 
                                            placeholder="My Awesome Website" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label text-gray-300">Website URL</label>
-                                    <input type="url" name="base_url" class="form-control personal-info-input" 
+                                    <input type="url" name="base_url" id="new-project-url" class="form-control personal-info-input" 
                                            placeholder="https://example.com" required>
                                 </div>
                                 <div class="col-12 mt-3">
-                                    <button type="submit" class="btn btn-primary me-3">
+                                    <button type="submit" class="btn btn-primary me-3" id="new-project-submit-btn">
                                         <i class="fas fa-play-circle me-2"></i>Start SEO Analysis
                                     </button>
                                 </div>
@@ -117,7 +117,7 @@
                         </div>
 
                         <div class="mt-4">
-                            <button id="run-analysis-btn" class="btn btn-success glass-success-btn"
+                            <button id="run-analysis-btn" class="btn btn-success"
                                     onclick="startAnalysis()" disabled>
                                 <i class="fas fa-chart-line me-2"></i>Run SEO Analysis
                             </button>
@@ -127,9 +127,93 @@
             </div>
         </div>
 
-        <!-- Analysis Results (optionnel si vous voulez garder l'affichage AJAX) -->
-        <div id="analysis-results" style="display: none;">
-            <!-- Contenu des résultats -->
+        <!-- Loading Modals -->
+        <div class="modal fade" id="newProjectLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content glass-card border-0 overflow-hidden">
+                    <div class="modal-body text-center p-5">
+                        <div class="spinner-border text-primary mb-4" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        
+                        <h4 class="text-dark fw-bold mb-3">SEO Analysis in Progress</h4>
+                        <p class="text-gray-300 mb-4">We're analyzing your website's performance. This may take 1-2 minutes.</p>
+                        
+                        <div class="progress-steps mb-4">
+                            <div class="step active" data-step="1">
+                                <span class="step-icon">🔍</span>
+                                <span class="step-text">Scanning Website</span>
+                            </div>
+                            <div class="step" data-step="2">
+                                <span class="step-icon">⚡</span>
+                                <span class="step-text">Performance Audit</span>
+                            </div>
+                            <div class="step" data-step="3">
+                                <span class="step-icon">📊</span>
+                                <span class="step-text">Generating Report</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container mb-3">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted progress-percentage">0%</small>
+                        </div>
+                        
+                        <div class="time-estimate">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                Estimated time: <span id="newProjectTimeRemaining">1-2 minutes</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="analysisLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content glass-card border-0 overflow-hidden">
+                    <div class="modal-body text-center p-5">
+                        <div class="spinner-border text-primary mb-4" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        
+                        <h4 class="text-dark fw-bold mb-3">SEO Analysis in Progress</h4>
+                        <p class="text-gray-300 mb-4">We're analyzing your website's performance. This may take 1-2 minutes.</p>
+                        
+                        <div class="progress-steps mb-4">
+                            <div class="step active" data-step="1">
+                                <span class="step-icon">🔍</span>
+                                <span class="step-text">Scanning Website</span>
+                            </div>
+                            <div class="step" data-step="2">
+                                <span class="step-icon">⚡</span>
+                                <span class="step-text">Performance Audit</span>
+                            </div>
+                            <div class="step" data-step="3">
+                                <span class="step-icon">📊</span>
+                                <span class="step-text">Generating Report</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container mb-3">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted progress-percentage">0%</small>
+                        </div>
+                        
+                        <div class="time-estimate">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                Estimated time: <span id="timeRemaining">1-2 minutes</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -152,16 +236,16 @@ function selectOption(option) {
     // Réinitialiser l'interface
     document.getElementById('new-project-form').style.display = 'none';
     document.getElementById('existing-project-form').style.display = 'none';
-    document.getElementById('new-project-card').classList.remove('glass-card-selected', 'border-blue-400/50');
-    document.getElementById('existing-project-card').classList.remove('glass-card-selected', 'border-green-400/50');
+    document.getElementById('new-project-card').classList.remove('selected');
+    document.getElementById('existing-project-card').classList.remove('selected');
     
     // Afficher le formulaire sélectionné
     if (option === 'new') {
         document.getElementById('new-project-form').style.display = 'block';
-        document.getElementById('new-project-card').classList.add('glass-card-selected', 'border-blue-400/50');
+        document.getElementById('new-project-card').classList.add('selected');
     } else {
         document.getElementById('existing-project-form').style.display = 'block';
-        document.getElementById('existing-project-card').classList.add('glass-card-selected', 'border-green-400/50');
+        document.getElementById('existing-project-card').classList.add('selected');
         fetchProjects();
     }
 }
@@ -203,23 +287,31 @@ function displayProjects(projects) {
     }
     
     projectsList.innerHTML = `
-        <label class="form-label text-gray-300">Your Projects</label>
-        <div class="row g-3">
-            ${projects.map(project => `
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-card rounded-2 border p-3 cursor-pointer transition-all project-card"
-                         data-project-id="${project.id}"
-                         onclick="selectProject(${project.id})">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-dark mb-1">${project.name}</h6>
-                                <small class="text-gray-300">${project.base_url}</small>
+        <label class="form-label text-gray-300 d-flex justify-content-between align-items-center">
+            <span>Your Projects <span class="badge bg-secondary ms-1">${projects.length}</span></span>
+        </label>
+        
+        <div class="projects-scroll-container" id="projects-scroll-container" style="max-height: 400px; overflow-y: auto;">
+            <div class="row g-3">
+                ${projects.map((project, index) => `
+                    <div class="col-lg-6 col-md-12">
+                        <div class="glass-card rounded-2 border p-3 cursor-pointer transition-all project-card"
+                             data-project-id="${project.id}"
+                             onclick="selectProject(${project.id})"
+                             title="Click to analyze: ${project.base_url}">
+                            <div class="d-flex justify-content-between align-items-center h-100">
+                                <div class="project-info flex-grow-1" style="min-width: 0;">
+                                    <h6 class="text-dark mb-1 text-truncate">${project.name}</h6>
+                                    <small class="text-gray-300 text-truncate d-block">${project.base_url}</small>
+                                </div>
+                                <span class="badge bg-white/10 text-dark ms-2 flex-shrink-0">
+                                    ${project.seo_analyses_count || 0} analyses
+                                </span>
                             </div>
-                            <span class="badge bg-white/10 text-white">${project.seo_analyses_count} analyses</span>
                         </div>
                     </div>
-                </div>
-            `).join('')}
+                `).join('')}
+            </div>
         </div>
     `;
 }
@@ -227,12 +319,12 @@ function displayProjects(projects) {
 function selectProject(projectId) {
     // Retirer la sélection de tous les projets
     document.querySelectorAll('.project-card').forEach(card => {
-        card.classList.remove('glass-card-selected', 'border-blue-400/50');
+        card.classList.remove('selected');
     });
     
     // Sélectionner le projet cliqué
     const selectedCard = document.querySelector(`[data-project-id="${projectId}"]`);
-    selectedCard.classList.add('glass-card-selected', 'border-blue-400/50');
+    selectedCard.classList.add('selected');
     
     selectedProject = projects.find(p => p.id === projectId);
     
@@ -244,15 +336,21 @@ function selectProject(projectId) {
 
 function startAnalysis() {
     if (!selectedProject) {
-        alert('Please select a project first');
+        showError('Please select a project first');
         return;
     }
     
     const analysisUrl = document.getElementById('analysis-url').value;
     if (!analysisUrl) {
-        alert('Please enter a URL to analyze');
+        showError('Please enter a URL to analyze');
         return;
     }
+    
+    // Afficher le modal de loading
+    showLoadingModal();
+    
+    // Simulation de progression
+    simulateProgress();
     
     // Créer un formulaire dynamique pour la soumission
     const form = document.createElement('form');
@@ -281,34 +379,220 @@ function startAnalysis() {
     urlInput.value = analysisUrl;
     form.appendChild(urlInput);
     
-    // Soumettre le formulaire
-    document.body.appendChild(form);
-    form.submit();
+    // Soumettre le formulaire après un petit délai
+    setTimeout(() => {
+        document.body.appendChild(form);
+        form.submit();
+    }, 2000);
 }
 
-function showError(message) {
-    // Vous pouvez utiliser un toast ou une alerte simple
-    alert('Error: ' + message);
-}
-
-// Gestion de la soumission du formulaire nouveau projet (pas besoin de JS supplémentaire)
-document.getElementById('new-project-form-element')?.addEventListener('submit', function(e) {
-    // Validation supplémentaire si nécessaire
-    const name = this.querySelector('input[name="name"]').value;
-    const url = this.querySelector('input[name="base_url"]').value;
+function showLoadingModal() {
+    const modal = new bootstrap.Modal(document.getElementById('analysisLoadingModal'));
+    modal.show();
     
-    if (!name || !url) {
-        e.preventDefault();
-        alert('Please fill in all fields');
-        return;
+    // Réinitialiser la progression
+    updateProgress(0);
+    updateStep(1);
+}
+
+function simulateProgress() {
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 5;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+        }
+        
+        updateProgress(progress);
+        
+        // Mettre à jour les étapes en fonction de la progression
+        if (progress >= 30 && progress < 70) {
+            updateStep(2);
+        } else if (progress >= 70) {
+            updateStep(3);
+        }
+    }, 500);
+}
+
+function updateProgress(percent) {
+    const progressBar = document.querySelector('#analysisLoadingModal .progress-bar');
+    const percentage = document.querySelector('#analysisLoadingModal .progress-percentage');
+    
+    if (progressBar && percentage) {
+        progressBar.style.width = percent + '%';
+        percentage.textContent = Math.round(percent) + '%';
+        
+        // Mettre à jour le temps estimé
+        const timeRemaining = document.getElementById('timeRemaining');
+        if (timeRemaining) {
+            if (percent < 30) {
+                timeRemaining.textContent = '1-2 minutes';
+            } else if (percent < 70) {
+                timeRemaining.textContent = '30-60 seconds';
+            } else {
+                timeRemaining.textContent = '10-20 seconds';
+            }
+        }
     }
-});
+}
+
+function updateStep(stepNumber) {
+    const steps = document.querySelectorAll('#analysisLoadingModal .step');
+    
+    steps.forEach((step, index) => {
+        if (index + 1 <= stepNumber) {
+            step.classList.add('active');
+        } else {
+            step.classList.remove('active');
+        }
+    });
+}
+
+// Function to validate and submit new project form
+function validateNewProjectForm(event) {
+    event.preventDefault();
+    
+    const projectName = document.getElementById('new-project-name').value;
+    const projectUrl = document.getElementById('new-project-url').value;
+    const submitBtn = document.getElementById('new-project-submit-btn');
+    
+    if (!projectName || !projectUrl) {
+        showError('Please fill in all fields');
+        return false;
+    }
+    
+    // Validate URL format
+    if (!isValidUrl(projectUrl)) {
+        showError('Please enter a valid URL (e.g., https://example.com)');
+        return false;
+    }
+    
+    // Show loading modal
+    showNewProjectLoadingModal();
+    
+    // Disable submit button to prevent multiple clicks
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting Analysis...';
+    
+    // Simulate progress
+    simulateNewProjectProgress();
+    
+    // Submit the form after a delay to show the loading animation
+    setTimeout(() => {
+        document.getElementById('new-project-form-element').submit();
+    }, 3000);
+    
+    return false;
+}
+
+function showNewProjectLoadingModal() {
+    const modal = new bootstrap.Modal(document.getElementById('newProjectLoadingModal'));
+    modal.show();
+    
+    // Reset progress
+    updateNewProjectProgress(0);
+    updateNewProjectStep(1);
+}
+
+function simulateNewProjectProgress() {
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 8;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+        }
+        
+        updateNewProjectProgress(progress);
+        
+        // Update steps based on progress
+        if (progress >= 30 && progress < 70) {
+            updateNewProjectStep(2);
+        } else if (progress >= 70) {
+            updateNewProjectStep(3);
+        }
+    }, 300);
+}
+
+function updateNewProjectProgress(percent) {
+    const progressBar = document.querySelector('#newProjectLoadingModal .progress-bar');
+    const percentage = document.querySelector('#newProjectLoadingModal .progress-percentage');
+    
+    if (progressBar && percentage) {
+        progressBar.style.width = percent + '%';
+        percentage.textContent = Math.round(percent) + '%';
+        
+        // Update estimated time
+        const timeRemaining = document.getElementById('newProjectTimeRemaining');
+        if (timeRemaining) {
+            if (percent < 30) {
+                timeRemaining.textContent = '1-2 minutes';
+            } else if (percent < 70) {
+                timeRemaining.textContent = '30-60 seconds';
+            } else {
+                timeRemaining.textContent = '10-20 seconds';
+            }
+        }
+    }
+}
+
+function updateNewProjectStep(stepNumber) {
+    const steps = document.querySelectorAll('#newProjectLoadingModal .step');
+    
+    steps.forEach((step, index) => {
+        if (index + 1 <= stepNumber) {
+            step.classList.add('active');
+        } else {
+            step.classList.remove('active');
+        }
+    });
+}
+
+function isValidUrl(string) {
+    try {
+        const url = new URL(string);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) {
+        return false;
+    }
+}
+
+// Function to show error messages
+function showError(message) {
+    // You can use a toast notification instead of alert
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <strong>Error!</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
 </script>
 
 <style>
-.glass-card-selected {
+.glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-card.selected {
     background: rgba(255, 255, 255, 0.15) !important;
     backdrop-filter: blur(20px) !important;
+    border-color: rgba(59, 130, 246, 0.5) !important;
 }
 
 .cursor-pointer {
@@ -322,6 +606,44 @@ document.getElementById('new-project-form-element')?.addEventListener('submit', 
 .project-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    opacity: 1;
+}
+
+.step-icon {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+.step-text {
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.progress-container {
+    position: relative;
+}
+
+.progress-bar-animated {
+    transition: width 0.6s ease;
 }
 </style>
 

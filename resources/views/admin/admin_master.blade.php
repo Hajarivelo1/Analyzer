@@ -616,59 +616,608 @@ nav {
     transition: width 0.4s ease;
 }
 
+/* Correction pour le débordement des cartes d'audit */
 .pagespeed-audits {
-    margin-top: 2rem;
-}
-
-.audit-section-title {
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color:rgb(19, 16, 16);
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .audit-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 1rem;
+    width: 100%;
 }
 
 .audit-card {
-    background: rgba(255, 255, 255, 0.93);
-    border-radius: 10px;
-    padding: 1rem;
-    box-shadow: 0 0 8px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    min-height: 120px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.audit-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
 }
 
 .audit-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .audit-title {
-    font-weight: 500;
-    color: #2d4db6;
+    font-weight: 600;
+    color: #1a202c;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    flex: 1;
+    min-width: 200px;
+}
+
+.audit-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .audit-description {
-    font-size: 0.95rem;
-    color:rgb(167, 167, 167);
+    color: #4a5568;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
 }
 
 .audit-value {
-    font-size: 0.85rem;
+    color: #718096;
+    font-size: 0.8rem;
+    font-style: italic;
+    margin: 0;
 }
 
-.badge-info {
-    background-color: #17a2b8;
-    color: #fff;
+table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        thead {
+            background-color: #2e4db6;
+        }
+        
+        th {
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #e9ecef;
+            transition: background-color 0.2s ease;
+        }
+        
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        td {
+            padding: 15px;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Styles pour les accordéons d'audit */
+.audit-accordion .accordion-button {
+    background-color: #dbe1f7;
+    border: none;
+    font-weight: 600;
+    color: #2e4db6;
+    padding: 1rem 1.25rem;
 }
 
-.audit-description,
-.audit-body {
+.audit-accordion .accordion-button:not(.collapsed) {
+    background-color: #2e4db6;
+    color: white;
+    box-shadow: none;
+}
+
+.audit-accordion .accordion-button:focus {
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.audit-accordion .accordion-item {
+    border: 1px solid #dbe1f7;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+
+.audit-accordion .accordion-body {
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.audit-accordion .accordion-title {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.audit-accordion .badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Transition smooth */
+.audit-accordion .accordion-collapse {
+    transition: all 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .audit-accordion .accordion-button {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .audit-accordion .accordion-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+}
+/* Styles pour la version avancée des accordéons */
+.audit-accordion .accordion-button.warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.audit-accordion .accordion-button.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.audit-accordion .accordion-button.secondary {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.audit-accordion .accordion-button:not(.collapsed).warning {
+    background-color: #856404;
+    color: white;
+}
+
+.audit-accordion .accordion-button:not(.collapsed).info {
+    background-color: #0c5460;
+    color: white;
+}
+
+.audit-accordion .accordion-button:not(.collapsed).secondary {
+    background-color: #383d41;
+    color: white;
+}
+
+.audit-accordion .accordion-icon {
+    font-size: 1.2rem;
+}
+
+.audit-accordion .accordion-arrow {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.audit-accordion .accordion-button:not(.collapsed) .accordion-arrow {
+    transform: rotate(180deg);
+}
+
+.border-warning {
+    border-color: #ffeaa7 !important;
+}
+
+.border-info {
+    border-color: #81ecec !important;
+}
+
+.border-secondary {
+    border-color: #dfe6e9 !important;
+}
+.accordion-button::after{
+    display: none;
+}
+.btn-outlin-warnin:focus{
+    color: white !important;
+}
+
+
+/* Styles pour la liste de projets scrollable */
+.projects-scroll-container {
+    max-height: 400px; /* Hauteur fixe pour 6 projets */
+    overflow-y: auto;
+    padding-right: 8px;
+    margin-bottom: 1rem;
+}
+
+/* Style de la scrollbar */
+.projects-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.projects-scroll-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.projects-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+}
+
+.projects-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Ajustement de la hauteur des cartes de projet */
+.project-card {
+    height: 100px; /* Hauteur fixe pour uniformité */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Pour les écrans mobiles */
+@media (max-width: 768px) {
+    .projects-scroll-container {
+        max-height: 350px;
+    }
+    
+    .project-card {
+        height: auto;
+        min-height: 90px;
+    }
+}
+
+/* Amélioration du badge */
+.project-card .badge {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+    .audit-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .audit-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .audit-title {
+        min-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Style pour les badges */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* Progress bar */
+.metric-progress {
+    margin-top: 0.5rem;
+}
+
+/* Pour les très longs textes */
+.audit-description {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    max-height: 4.5em;
+}
+
+/* Correction spécifique pour les sections */
+.pagespeed-audits .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Correction pour les cartes de projet avec retour à la ligne */
+.project-card {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.project-card .d-flex {
+    flex-wrap: wrap; /* Permet le retour à la ligne */
+    gap: 0.5rem;
+}
+
+.project-card h6 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a202c;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    margin-bottom: 0.25rem;
+    line-height: 1.3;
+}
+
+.project-card small {
+    font-size: 0.8rem;
+    color: #718096 !important;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+    display: block;
+    max-width: 100%;
+}
+
+.project-card .badge {
+    flex-shrink: 0;
+    min-width: max-content;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    align-self: flex-start; /* Aligne le badge en haut */
+    margin-left: auto; /* Pousse le badge à droite */
+}
+
+/* Version pour les très longues URLs avec retour à la ligne intelligent */
+.project-card .url-text {
     word-break: break-word;
-    overflow-wrap: anywhere;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .project-card .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .project-card .badge {
+        margin-left: 0;
+        margin-top: 0.5rem;
+        align-self: flex-start;
+    }
+}
+/* Modern Loading Animations */
+.loading-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+.spinner-gradient {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #667eea, #764ba2, #f093fb, #f5576c, #667eea);
+    animation: rotate 2s linear infinite;
+    opacity: 0.1;
+}
+
+.spinner-ring {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 3px solid transparent;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1.5s linear infinite;
+}
+
+.spinner-dots {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 4px;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #667eea;
+    animation: bounce 1.4s infinite ease-in-out;
+}
+
+.dot-1 { animation-delay: -0.32s; }
+.dot-2 { animation-delay: -0.16s; }
+.dot-3 { animation-delay: 0s; }
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin: 2rem 0;
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 1;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+    position: relative;
+    flex: 1;
+}
+
+.step-icon {
+    width: 30px;
+    height: 30px;
+    background: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-icon {
+    background: #667eea;
+    color: white;
+    transform: scale(1.1);
+}
+
+.step-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.step.active .step-text {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* Progress Bar Animation */
+.progress-bar-animated {
+    background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c);
+    background-size: 400% 400%;
+    animation: gradientShift 2s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.progress-container {
+    position: relative;
+}
+
+.progress-percentage {
+    position: absolute;
+    right: 0;
+    top: -25px;
+    font-weight: 600;
+}
+
+/* Time Estimate */
+.time-estimate {
+    margin-top: 1rem;
+}
+
+/* Modal Glass Effect */
+#analysisLoadingModal .modal-content {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+#analysisLoadingModal .modal-body {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,249,250,0.9) 100%);
+}
+/* Specific styles for new project loading modal */
+#newProjectLoadingModal .modal-content {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+#newProjectLoadingModal .modal-body {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,249,250,0.9) 100%);
+}
+
+/* Button loading state */
+.btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Form validation styles */
+.personal-info-input:invalid {
+    border-color: #dc3545;
+}
+
+.personal-info-input:valid {
+    border-color: #198754;
+}
+/* Specific styles for new project loading modal */
+#newProjectLoadingModal .modal-content {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+#newProjectLoadingModal .modal-body {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,249,250,0.9) 100%);
+}
+
+/* Button loading state */
+.btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Form validation styles */
+.personal-info-input:invalid {
+    border-color: #dc3545;
+}
+
+.personal-info-input:valid {
+    border-color: #198754;
 }
 
 
