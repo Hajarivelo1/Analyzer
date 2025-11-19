@@ -37,6 +37,7 @@
                             rows="4"
                             placeholder="Example: Generate an SEO title and meta description for 'Madagascar Travel Guide'"
                             style="border-color: #e2e8f0; resize: none;"
+                            required
                         ></textarea>
                     </div>
 
@@ -63,6 +64,7 @@
                     <div class="text-center mt-4">
                         <button 
                             type="submit" 
+                            id="submit-btn"
                             class="btn btn-primary btn-lg px-5 py-3 rounded-2 fw-semibold text-white"
                             style="background: linear-gradient(135deg, #0d6efd, #6f42c1); border: none;"
                         >
@@ -85,6 +87,12 @@
             </div>
         </div>
 
+        <!-- Error Message -->
+        <div id="seo-error" class="alert alert-danger d-none text-center">
+            <h5 class="alert-heading">⚠️ Generation Error</h5>
+            <p id="error-message" class="mb-0"></p>
+        </div>
+
         <!-- Results Section -->
         <div id="seo-result" class="d-none">
             <div class="text-center mb-4">
@@ -102,7 +110,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="card-title fw-semibold text-dark mb-0">SEO Title</h5>
                         <button 
-                            onclick="copyText('seo-title')"
+                            onclick="copyToClipboard('seo-title')"
                             class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
                         >
                             <span>📋</span>
@@ -110,6 +118,7 @@
                         </button>
                     </div>
                     <p id="seo-title" class="text-primary fw-medium fs-5 mb-0"></p>
+                    <small id="seo-title-length" class="text-muted"></small>
                 </div>
             </div>
 
@@ -119,7 +128,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="card-title fw-semibold text-dark mb-0">Meta Description</h5>
                         <button 
-                            onclick="copyText('seo-meta')"
+                            onclick="copyToClipboard('seo-meta')"
                             class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
                         >
                             <span>📋</span>
@@ -127,13 +136,13 @@
                         </button>
                     </div>
                     <p id="seo-meta" class="text-muted mb-0 fst-italic"></p>
+                    <small id="seo-meta-length" class="text-muted"></small>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Custom Styles -->
 <style>
     .bg-gradient-primary {
         background: linear-gradient(135deg, #0d6efd, #6f42c1) !important;
@@ -162,136 +171,127 @@
     }
 </style>
 
-<!-- Script -->
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ SEO Generator initialized');
+
     const form = document.getElementById('seo-form');
     const resultBox = document.getElementById('seo-result');
     const loader = document.getElementById('seo-loader');
+    const errorBox = document.getElementById('seo-error');
     const seoTitle = document.getElementById('seo-title');
     const seoMeta = document.getElementById('seo-meta');
+    const submitBtn = document.getElementById('submit-btn');
 
-    if (form) {
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
+    if (!form) {
+        console.error('❌ Form not found');
+        return;
+    }
 
-            const prompt = document.getElementById('prompt').value.trim();
-            const lang = document.getElementById('lang').value;
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.log('🔄 Form submission started');
 
-            // Validation
-            if (!prompt) {
-                alert('Please enter a prompt to generate SEO content.');
-                return;
+        const prompt = document.getElementById('prompt').value.trim();
+        const lang = document.getElementById('lang').value;
+
+        if (!prompt) {
+            showError('Please enter a prompt to generate SEO content.');
+            return;
+        }
+
+        // Reset states
+        hideAll();
+        loader.classList.remove('d-none');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+
+        try {
+            console.log('📤 Sending request...');
+            const response = await fetch("{{ route('user.projects.seo.generate') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({ prompt, lang })
+            });
+
+            console.log('📥 Response status:', response.status);
+            const data = await response.json();
+            console.log('📋 API Response:', data);
+
+            if (!response.ok) {
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
             }
 
-            // Show loader, hide results
-            loader.classList.remove('d-none');
-            resultBox.classList.add('d-none');
+            if (data.success) {
+                console.log('✅ Content generated successfully');
 
-            try {
-                const response = await fetch("{{ route('user.projects.seo.generate') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                        "Accept": "application/json"
-                    },
-                    body: JSON.stringify({ 
-                        prompt: prompt,
-                        lang: lang 
-                    })
-                });
+                // Mettre à jour l'interface avec title/meta
+                seoTitle.textContent = data.title;
+                seoMeta.textContent  = data.meta;
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                // Afficher les longueurs
+                document.getElementById('seo-title-length').textContent = `${data.title.length} characters`;
+                document.getElementById('seo-meta-length').textContent  = `${data.meta.length} characters`;
 
-                const data = await response.json();
-
-                console.log("API Response:", data);
-
-                if (data.content) {
-                    const content = data.content.replace(/\*\*/g, "").trim();
-                    const lines = content.split("\n").map(l => l.trim()).filter(l => l !== "");
-
-                    let titleLine = "";
-                    let metaLine = "";
-
-                    // Parse the response to find title and meta description
-                    lines.forEach((line, i) => {
-                        const lowerLine = line.toLowerCase();
-                        if (lowerLine.includes("seo title") || lowerLine.includes("title")) {
-                            titleLine = lines[i + 1]?.replace(/^[:\-\s]*/, "") || "";
-                        }
-                        if (lowerLine.includes("meta") || lowerLine.includes("description")) {
-                            metaLine = lines[i + 1]?.replace(/^[:\-\s]*/, "") || "";
-                        }
-                    });
-
-                    // Fallback: if not found by markers, use first two non-empty lines
-                    if (!titleLine && lines.length > 0) {
-                        titleLine = lines[0];
-                    }
-                    if (!metaLine && lines.length > 1) {
-                        metaLine = lines[1];
-                    }
-
-                    seoTitle.textContent = titleLine || "No title generated";
-                    seoMeta.textContent = metaLine || "No meta description generated";
-
-                    // Show results with animation
-                    setTimeout(() => {
-                        resultBox.classList.remove('d-none');
-                        resultBox.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start' 
-                        });
-                    }, 300);
-
-                } else {
-                    throw new Error('No content in response');
-                }
-
-            } catch (error) {
-                console.error("Error during request:", error);
-                
-                seoTitle.textContent = "Error";
-                seoMeta.textContent = "Unable to generate content. Please try again.";
-                
                 resultBox.classList.remove('d-none');
-                
-            } finally {
-                loader.classList.add('d-none');
+                resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                throw new Error(data.error || 'No content generated');
             }
-        });
+
+        } catch (error) {
+            console.error('❌ Error:', error);
+            showError(error.message || 'Failed to generate content. Please try again.');
+        } finally {
+            loader.classList.add('d-none');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="me-2">🚀</span>Generate Content';
+        }
+    });
+
+    function showError(message) {
+        document.getElementById('error-message').textContent = message;
+        errorBox.classList.remove('d-none');
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function hideAll() {
+        resultBox.classList.add('d-none');
+        errorBox.classList.add('d-none');
+        loader.classList.add('d-none');
     }
 });
 
-// Copy to clipboard function
-function copyText(elementId) {
+// ✅ Fonction copier améliorée
+function copyToClipboard(elementId) {
     const element = document.getElementById(elementId);
     const text = element.textContent.trim();
-    
-    if (text && text !== "No title generated" && text !== "No meta description generated") {
-        navigator.clipboard.writeText(text).then(() => {
-            // Show temporary success feedback
-            const originalText = element.textContent;
-            const originalColor = element.style.color;
-            
-            element.textContent = "✓ Copied to clipboard!";
-            element.style.color = "#198754";
-            
-            setTimeout(() => {
-                element.textContent = originalText;
-                element.style.color = originalColor;
-            }, 1500);
-            
-        }).catch(err => {
-            console.error("Error copying text:", err);
-            alert("Failed to copy text to clipboard.");
-        });
+
+    if (!text || text.startsWith('⚠️')) {
+        return;
     }
+
+    navigator.clipboard.writeText(text).then(() => {
+        // Feedback visuel
+        const originalText = element.textContent;
+        element.textContent = '✓ Copied to clipboard!';
+        element.style.color = '#198754';
+
+        setTimeout(() => {
+            element.textContent = originalText;
+            element.style.color = elementId === 'seo-title' ? '#0d6efd' : '#6c757d';
+        }, 1500);
+
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        alert('Failed to copy to clipboard. Please select and copy manually.');
+    });
 }
 </script>
+
 
 @endsection

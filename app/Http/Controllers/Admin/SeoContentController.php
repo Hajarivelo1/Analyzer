@@ -12,35 +12,58 @@ class SeoContentController extends Controller
     public function generate(Request $request)
     {
         try {
-            // Récupération des inputs
+            // Inputs
             $prompt = $request->input('prompt', 'Titre SEO et meta pour Voyage Madagascar');
             $lang   = $request->input('lang', 'fr');
 
-            // Instanciation du service
             $service = new OllamaSeoService();
 
-            // Construction du prompt enrichi
-            $fullPrompt = "En {$lang}, " . $prompt;
+            // Prompt enrichi avec consigne stricte JSON
+            $fullPrompt = "En {$lang}, génère un titre SEO (≤70 caractères) et une meta-description (≤160 caractères). 
+Réponds uniquement en JSON strict avec deux champs : 
+{\"title\": \"...\", \"meta\": \"...\"}. 
+Sujet : {$prompt}";
 
             // Appel au service Ollama
             $content = $service->generateContent($fullPrompt);
 
-            // Réponse JSON
+            // Extraire uniquement le JSON si Ollama renvoie du texte autour
+            $decoded = null;
+            if ($content) {
+                if (preg_match('/\{.*\}/s', $content, $matches)) {
+                    $decoded = json_decode($matches[0], true);
+                } else {
+                    $decoded = json_decode($content, true);
+                }
+            }
+
+            // Vérifier si le JSON est valide
+            if (json_last_error() === JSON_ERROR_NONE && isset($decoded['title'], $decoded['meta'])) {
+                return response()->json([
+                    'success' => true,
+                    'prompt'  => $prompt,
+                    'lang'    => $lang,
+                    'title'   => $decoded['title'],
+                    'meta'    => $decoded['meta'],
+                ]);
+            }
+
+            // Fallback : renvoyer des champs vides mais exploitables
             return response()->json([
                 'success' => true,
                 'prompt'  => $prompt,
                 'lang'    => $lang,
-                'content' => $content ?? '⚠️ Aucune réponse générée par Ollama',
+                'title'   => '⚠️ Aucun titre généré',
+                'meta'    => '⚠️ Aucune meta-description générée',
+                'raw'     => $content,
             ]);
 
         } catch (\Throwable $e) {
-            // Log de l’erreur pour débogage
             Log::error('Erreur SeoContentController@generate', [
                 'message' => $e->getMessage(),
                 'trace'   => $e->getTraceAsString(),
             ]);
 
-            // Réponse JSON d’erreur
             return response()->json([
                 'success' => false,
                 'error'   => 'Une erreur interne est survenue',
