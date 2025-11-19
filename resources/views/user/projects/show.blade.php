@@ -531,7 +531,17 @@
 <div id="audit-fragments-wrapper"></div>
 
 
-
+<div class="mb-2">
+    <li class="list-group-item border-0 p-0">
+        <a href="{{ route('user.projects.seo') }}" 
+           class="d-flex align-items-center text-decoration-none text-dark p-3 rounded-3 transition-all"
+           style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 4px solid #0d6efd !important;">
+            <span class="me-3 fs-5">✨</span>
+            <span class="fw-semibold">SEO Generator</span>
+            <span class="ms-auto text-muted small">→</span>
+        </a>
+    </li>
+</div>
 
 
 

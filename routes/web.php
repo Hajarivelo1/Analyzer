@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\SeoAnalysisController;
 use App\Http\Controllers\WhoisController;
+use App\Http\Controllers\Admin\SeoContentController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -82,6 +83,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/projects/{id}', [SeoAnalysisController::class, 'show'])->name('project.show');
     Route::get('/admin/projects/json', [ProjectController::class, 'getProjectsJson'])->name('projects.json');
     Route::get('/test-whois', [WhoisController::class, 'testWhois']);
+   
+
+// Route GET pour afficher la page
+Route::get('/user/projects/seo', function () {
+    return view('user.projects.seoGenerator');
+})->name('user.projects.seo');
+
+// Route POST pour générer le contenu SEO
+Route::post('/user/projects/seo/generate', [SeoContentController::class, 'generate'])
+    ->name('user.projects.seo.generate');
+
+
+
+
+
     // Dans votre route, ajoutez des vérifications
 
 

@@ -163,7 +163,7 @@ class ScraperService
         'getname','getid','getvalue','gettype','getlength','getitem','getattribute','get','set','success',
         'error','errorcode','errormessage','errors','errorcode','errormessage','errors','errorcode','errormessage',
         'slider','modules','textpanel','thumb','elementor','revapi','enable', 'offset','gallery','wp','undefined',
-        'strippanel','enabled','revslider','fullscreen','elementor-social-icon','wp-admin','','',
+        'strippanel','enabled','revslider','fullscreen','elementor-social-icon','wp-admin','mailpoet','',
         
 
 
