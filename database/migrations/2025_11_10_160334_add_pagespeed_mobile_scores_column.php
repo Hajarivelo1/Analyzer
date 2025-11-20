@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('seo_analyses', function (Blueprint $table) {
-            $table->json('pagespeed_mobile_scores')->nullable()->after('pagespeed_mobile_audits');
+            if (!Schema::hasColumn('seo_analyses', 'pagespeed_mobile_scores')) {
+                $table->json('pagespeed_mobile_scores')->nullable()->after('pagespeed_mobile_audits');
+            }
         });
     }
 

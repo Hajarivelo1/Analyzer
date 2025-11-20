@@ -38,7 +38,7 @@
                             placeholder="Example: Generate an SEO title and meta description for 'Madagascar Travel Guide'"
                             style="border-color: #e2e8f0; resize: none;"
                             required
-                        ></textarea>
+                        >{{ old('prompt', $prefillPrompt) }}</textarea>
                     </div>
 
                     <!-- Language Selector -->
@@ -52,11 +52,11 @@
                             name="lang"
                             style="border-color: #e2e8f0;"
                         >
-                            <option value="en" selected>English</option>
-                            <option value="fr">French</option>
-                            <option value="de">German</option>
-                            <option value="es">Spanish</option>
-                            <option value="it">Italian</option>
+                        <option value="en" {{ ($prefillLang ?? 'en') === 'en' ? 'selected' : '' }}>English</option>
+    <option value="fr" {{ ($prefillLang ?? 'en') === 'fr' ? 'selected' : '' }}>French</option>
+    <option value="de" {{ ($prefillLang ?? 'en') === 'de' ? 'selected' : '' }}>German</option>
+    <option value="es" {{ ($prefillLang ?? 'en') === 'es' ? 'selected' : '' }}>Spanish</option>
+    <option value="it" {{ ($prefillLang ?? 'en') === 'it' ? 'selected' : '' }}>Italian</option>
                         </select>
                     </div>
 
@@ -140,6 +140,16 @@
                 </div>
             </div>
         </div>
+        <!-- Regenerate Button -->
+<div class="text-center mt-4">
+    <button 
+        id="regenerate-btn"
+        class="btn btn-warning btn-lg px-4 py-2 rounded-2 fw-semibold d-none"
+    >
+        🔄 Regenerate Content
+    </button>
+</div>
+
     </div>
 </div>
 
@@ -182,12 +192,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const seoTitle = document.getElementById('seo-title');
     const seoMeta = document.getElementById('seo-meta');
     const submitBtn = document.getElementById('submit-btn');
+    const regenerateBtn = document.getElementById('regenerate-btn');
 
     if (!form) {
         console.error('❌ Form not found');
         return;
     }
 
+    // --- Soumission du formulaire ---
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         console.log('🔄 Form submission started');
@@ -196,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const lang = document.getElementById('lang').value;
 
         if (!prompt) {
-            showError('Please enter a prompt to generate SEO content.');
+            showToast('Please enter a prompt to generate SEO content.', 'warning');
             return;
         }
 
@@ -237,15 +249,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('seo-title-length').textContent = `${data.title.length} characters`;
                 document.getElementById('seo-meta-length').textContent  = `${data.meta.length} characters`;
 
+                // Afficher la section résultats
                 resultBox.classList.remove('d-none');
                 resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // 👉 Afficher le bouton Regenerate
+                regenerateBtn.classList.remove('d-none');
             } else {
                 throw new Error(data.error || 'No content generated');
             }
 
         } catch (error) {
             console.error('❌ Error:', error);
-            showError(error.message || 'Failed to generate content. Please try again.');
+            showToast(error.message || 'Failed to generate content. Please try again.', 'danger');
         } finally {
             loader.classList.add('d-none');
             submitBtn.disabled = false;
@@ -253,16 +269,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function showError(message) {
-        document.getElementById('error-message').textContent = message;
-        errorBox.classList.remove('d-none');
-        errorBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // --- Bouton Regenerate ---
+    regenerateBtn.addEventListener('click', async function() {
+        const prompt = document.getElementById('prompt').value.trim();
+        const lang = document.getElementById('lang').value;
 
+        if (!prompt) {
+            showToast("No prompt available to regenerate!", "warning");
+            return;
+        }
+
+        loader.classList.remove('d-none');
+        regenerateBtn.disabled = true;
+
+        try {
+            const response = await fetch("{{ route('user.projects.seo.generate') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({ prompt, lang })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                seoTitle.textContent = data.title;
+                seoMeta.textContent  = data.meta;
+
+                document.getElementById('seo-title-length').textContent = `${data.title.length} characters`;
+                document.getElementById('seo-meta-length').textContent  = `${data.meta.length} characters`;
+
+                showToast("Content regenerated successfully!", "success");
+            } else {
+                showToast(data.error || "Failed to regenerate content", "danger");
+            }
+        } catch (err) {
+            console.error(err);
+            showToast("Error during regeneration", "danger");
+        } finally {
+            loader.classList.add('d-none');
+            regenerateBtn.disabled = false;
+        }
+    });
+
+    // --- Fonctions utilitaires ---
     function hideAll() {
         resultBox.classList.add('d-none');
         errorBox.classList.add('d-none');
         loader.classList.add('d-none');
+    }
+
+    function showToast(message, type = 'danger') {
+        const toastEl = document.getElementById('seo-toast');
+        const toastMsg = document.getElementById('seo-toast-message');
+
+        toastEl.className = `toast align-items-center text-bg-${type} border-0`;
+        toastMsg.textContent = message;
+
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
     }
 });
 
@@ -276,7 +344,6 @@ function copyToClipboard(elementId) {
     }
 
     navigator.clipboard.writeText(text).then(() => {
-        // Feedback visuel
         const originalText = element.textContent;
         element.textContent = '✓ Copied to clipboard!';
         element.style.color = '#198754';
@@ -288,10 +355,19 @@ function copyToClipboard(elementId) {
 
     }).catch(err => {
         console.error('Copy failed:', err);
-        alert('Failed to copy to clipboard. Please select and copy manually.');
+        showToast("Failed to copy to clipboard. Please select and copy manually.", "danger");
     });
 }
 </script>
 
 
+
 @endsection
+
+@if($prefill)
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('prompt').focus();
+});
+</script>
+@endif

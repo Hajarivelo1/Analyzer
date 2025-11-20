@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\OllamaSeoService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Models\SeoGeneration;
 
 class SeoContentController extends Controller
 {
@@ -39,6 +41,15 @@ Sujet : {$prompt}";
 
             // Vérifier si le JSON est valide
             if (json_last_error() === JSON_ERROR_NONE && isset($decoded['title'], $decoded['meta'])) {
+                // Sauvegarde en base
+                SeoGeneration::create([
+                    'user_id' => Auth::id(),
+                    'prompt'  => $prompt,
+                    'lang'    => $lang,
+                    'title'   => $decoded['title'],
+                    'meta'    => $decoded['meta'],
+                ]);
+
                 return response()->json([
                     'success' => true,
                     'prompt'  => $prompt,
@@ -49,6 +60,14 @@ Sujet : {$prompt}";
             }
 
             // Fallback : renvoyer des champs vides mais exploitables
+            SeoGeneration::create([
+                'user_id' => Auth::id(),
+                'prompt'  => $prompt,
+                'lang'    => $lang,
+                'title'   => '⚠️ Aucun titre généré',
+                'meta'    => '⚠️ Aucune meta-description générée',
+            ]);
+
             return response()->json([
                 'success' => true,
                 'prompt'  => $prompt,
@@ -71,4 +90,17 @@ Sujet : {$prompt}";
             ], 500);
         }
     }
+
+
+
+    public function page(Request $request)
+{
+    return view('user.projects.seoGenerator', [
+        'prefill'       => session('prefill', false),
+        'prefillPrompt' => $request->query('prompt', ''), // ✅ valeur par défaut vide
+        'prefillLang'   => $request->query('lang', 'en'),
+    ]);
+}
+
+
 }

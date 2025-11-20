@@ -5,9 +5,9 @@
     <div class="glass-card p-4 mb-5 text-dark">
         
         <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h2 class="mb-3 fw-bold" style=" color:#2e4db6;">🗂️ Project: {{ $project->name }}</h2>
+            <h2 class="mb-3 fw-bold" style=" color:#2e4db6;">🗂️ Project: {{ $project->name }}</h2>
+        </div>
         
-       </div>
         <p><strong><i class="bi bi-link-45deg text-info me-1"></i>URL:</strong> {{ $project->base_url }}</p>
 
         @if($analysis)
@@ -74,29 +74,55 @@
                     </ul>
                 </div>
 
-                {{-- Headings --}}
+                {{-- Headings - CORRIGÉ --}}
                 <div class="tab-pane fade" id="headings" role="tabpanel">
-                    <ul class="list-group list-group-flush mb-4">
-                        @foreach(json_decode($analysis->headings, true) as $heading)
-                            <li class="list-group-item bg-transparent text-dark">{{ $heading }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-
-                {{-- Images --}}
-                <div class="tab-pane fade" id="images" role="tabpanel">
-                    <ul class="list-group list-group-flush mb-4">
-                        @foreach(json_decode($analysis->images_data, true) as $img)
-                            <li class="list-group-item bg-transparent text-dark truncate-filename">{{ $img }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-
-                {{-- Mots-clés --}}
-                <div class="tab-pane fade" id="keywords" role="tabpanel">
-                    @if($analysis->keywords && count((array) $analysis->keywords))
+                    @if(!empty($analysis->headings) && is_array($analysis->headings))
                         <ul class="list-group list-group-flush mb-4">
-                            @foreach((array) $analysis->keywords as $word => $count)
+                            @foreach($analysis->headings as $heading)
+                                @if(is_array($heading))
+                                    <li class="list-group-item bg-transparent text-dark">
+                                        <span class="badge bg-primary me-2">{{ $heading['tag'] ?? 'N/A' }}</span>
+                                        {{ $heading['text'] ?? 'Texte non disponible' }}
+                                    </li>
+                                @else
+                                    <li class="list-group-item bg-transparent text-dark">{{ $heading }}</li>
+                                @endif
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Aucun heading trouvé sur cette page.
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Images - CORRIGÉ --}}
+                <div class="tab-pane fade" id="images" role="tabpanel">
+                    @if(!empty($analysis->images_data) && is_array($analysis->images_data))
+                        <ul class="list-group list-group-flush mb-4">
+                            @foreach($analysis->images_data as $img)
+                                @if(is_array($img))
+                                    <li class="list-group-item bg-transparent text-dark truncate-filename">
+                                        <strong>Source:</strong> {{ $img['src'] ?? 'N/A' }}<br>
+                                        <strong>Alt:</strong> {{ $img['alt'] ?? 'Aucun texte alternatif' }}
+                                    </li>
+                                @else
+                                    <li class="list-group-item bg-transparent text-dark truncate-filename">{{ $img }}</li>
+                                @endif
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Aucune image trouvée sur cette page.
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Mots-clés - CORRIGÉ --}}
+                <div class="tab-pane fade" id="keywords" role="tabpanel">
+                    @if(!empty($analysis->keywords) && is_array($analysis->keywords) && count($analysis->keywords) > 0)
+                        <ul class="list-group list-group-flush mb-4">
+                            @foreach($analysis->keywords as $word => $count)
                                 <li class="list-group-item bg-transparent text-dark">
                                     <strong>{{ $word }}</strong> — {{ $count }} occurrence{{ $count > 1 ? 's' : '' }}
                                 </li>
@@ -236,26 +262,22 @@
                     @endif
                 </div>
 
-                {{-- Audit Structure --}}
+                {{-- Audit Structure - CORRIGÉ --}}
                 <div class="tab-pane fade" id="audit-structure" role="tabpanel" aria-labelledby="audit-structure-tab">
                     <h5 class="mt-3">Structure of Hn tags</h5>
                     @php
-                        try {
-                            $headings = json_decode($analysis->headings_structure ?? '[]', true, 512, JSON_THROW_ON_ERROR);
-                        } catch (\JsonException $e) {
-                            $headings = [];
-                        }
+                        $headings = $analysis->headings_structure ?? [];
                         $hasH1 = false;
                         $total = count($headings);
                         $maxDepth = 0;
                         $sumDepth = 0;
                     @endphp
-                    @if(is_array($headings) && $total)
+                    @if(is_array($headings) && $total > 0)
                         @foreach($headings as $h)
                             @php
-                                $hasH1 = $hasH1 || strtolower($h['tag']) === 'h1';
-                                $maxDepth = max($maxDepth, $h['depth']);
-                                $sumDepth += $h['depth'];
+                                $hasH1 = $hasH1 || strtolower($h['tag'] ?? '') === 'h1';
+                                $maxDepth = max($maxDepth, $h['depth'] ?? 0);
+                                $sumDepth += $h['depth'] ?? 0;
                             @endphp
                         @endforeach
                         @if(!$hasH1)
@@ -265,7 +287,7 @@
                         @endif
                         <div class="alert alert-secondary">
                             <strong>Total :</strong> {{ $total }} Hn tags |
-                            <strong>Average depth:</strong> {{ round($sumDepth / $total, 1) }} |
+                            <strong>Average depth:</strong> {{ $total > 0 ? round($sumDepth / $total, 1) : 0 }} |
                             <strong>Max. depth :</strong> {{ $maxDepth }}
                         </div>
                         <table class="table table-bordered table-sm mt-2">
@@ -279,8 +301,8 @@
                             <tbody>
                                 @foreach($headings as $heading)
                                     @php
-                                        $depth = $heading['depth'];
-                                        $tag = strtolower($heading['tag']);
+                                        $depth = $heading['depth'] ?? 0;
+                                        $tag = strtolower($heading['tag'] ?? '');
                                         $rowClass = match(true) {
                                             $depth <= 5 => 'table-success',
                                             $depth <= 10 => 'table-info',
@@ -289,7 +311,7 @@
                                     @endphp
                                     <tr class="{{ $rowClass }}">
                                         <td><span class="badge bg-primary">{{ strtoupper($tag) }}</span></td>
-                                        <td>{{ $heading['text'] }}</td>
+                                        <td>{{ $heading['text'] ?? 'N/A' }}</td>
                                         <td>{{ $depth }}</td>
                                     </tr>
                                 @endforeach
@@ -307,7 +329,6 @@
 
     {{-- ✅ Message d'alerte si Cloudflare bloque le contenu --}}
     @if($analysis && ($analysis->cloudflare_blocked || empty($analysis->main_content)))
-
         <div class="alert alert-warning">
             ⚠️ The main content could not be extracted.
             @if($analysis->cloudflare_blocked)
@@ -318,263 +339,297 @@
         </div>
     @endif
 
-    @if($analysis->main_content)
-        <div class="glass-card mt-5 pt-4" style="backdrop-filter: blur(12px); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); padding: 2rem; border: 1px solid rgba(255, 255, 255, 0.3);">
-           
-            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🧠 Main content analysis</h5>
-    </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="p-3 rounded" style="background:#222d40; color: #fff;">
-                        @if($analysis->readability_score)
-                            <div class="badge bg-info">Readability : {{ $analysis->readability_score }}%</div>
+    @if($analysis)
+    <div class="glass-card mt-5 pt-4" style="backdrop-filter: blur(12px); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); padding: 2rem; border: 1px solid rgba(255, 255, 255, 0.3);">
+       
+        <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+            <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🧠 Main content analysis</h5>
+        </div>
+        
+        {{-- Vérification du contenu principal --}}
+        @php
+            $hasMainContent = !empty($analysis->main_content);
+            $content = is_array($analysis->content_analysis) ? $analysis->content_analysis : [];
+            $paragraphs = $content['paragraphs'] ?? [];
+            $hasParagraphs = is_array($paragraphs) && count($paragraphs) > 0;
+        @endphp
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="p-3 rounded" style="background:#222d40; color: #fff;">
+                    @if($analysis->readability_score)
+                        <div class="badge bg-info">Readability : {{ $analysis->readability_score }}%</div>
+                    @endif
+                    
+                    {{-- Statut du contenu --}}
+                    <div class="mt-3">
+                        <strong>📊 Content Status:</strong><br>
+                        @if($hasMainContent)
+                            ✅ Main content extracted ({{ strlen($analysis->main_content) }} characters)
+                        @else
+                            ❌ No main content available
+                            @if($analysis->cloudflare_blocked)
+                                <br><small class="text-warning">🔒 Cloudflare protection detected</small>
+                            @endif
                         @endif
-                        @php
-                            $analysisData = json_decode($analysis->content_analysis, true);
-                        @endphp
-                        @if(!empty($analysisData['paragraph_count']))
-                            <div class="mt-3">
-                                <strong>🧾 Paragraphs extracted :</strong> {{ $analysisData['paragraph_count'] }}<br>
-                                <strong>📌 Short paragraphs :</strong> {{ $analysisData['short_paragraphs'] }}<br>
-                                <strong>🔁 Duplications :</strong> {{ count($analysisData['duplicate_paragraphs'] ?? []) }}
-                            </div>
+                        <br>
+                        @if($hasParagraphs)
+                            ✅ {{ count($paragraphs) }} paragraphs extracted
+                        @else
+                            ❌ No paragraphs data
                         @endif
                     </div>
+
+                    @if(!empty($content['paragraph_count']))
+                        <div class="mt-3">
+                            <strong>🧾 Paragraphs extracted :</strong> {{ $content['paragraph_count'] }}<br>
+                            <strong>📌 Short paragraphs :</strong> {{ $content['short_paragraphs'] ?? 0 }}<br>
+                            <strong>🔁 Duplications :</strong> {{ count($content['duplicate_paragraphs'] ?? []) }}
+                        </div>
+                    @else
+                        <div class="mt-3 text-warning">
+                            <small>No paragraph analysis data available</small>
+                        </div>
+                    @endif
                 </div>
             </div>
-            <div class="row pt-4">
-                @if(!empty($analysis->main_content))
-                    <div class="col-md-6">
-                        <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
-                            <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#mainContentCollapse" aria-expanded="false" aria-controls="mainContentCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>📄 Extracted content</span>
-                                <span class="badge bg-light text-dark">Display</span>
-                            </button>
-                            <div class="collapse" id="mainContentCollapse">
-                                <div class="p-3" style="max-height: 400px; overflow-y: auto;">
-                                    <button class="btn btn-sm btn-outline-dark mb-3" onclick="navigator.clipboard.writeText(`{{ $analysis->main_content }}`)">📋 Copier</button>
-                                    <div style="white-space: pre-wrap; font-family: monospace; background-color: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; word-break: break-word;">
-                                        {{ $analysis->main_content }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @php
-                    $content = json_decode($analysis->content_analysis ?? '{}', true);
-                    $paragraphs = $content['paragraphs'] ?? [];
-                @endphp
-                @if(is_array($paragraphs) && count($paragraphs) > 0)
-                    <div class="col-md-6">
-                        <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
-                            <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#paragraphCollapse" aria-expanded="false" aria-controls="paragraphCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>🧾 Paragraphs extracted</span>
-                                <span class="badge bg-light text-dark">{{ count($paragraphs) }} Displayed</span>
-                            </button>
-                            <div class="collapse" id="paragraphCollapse">
-                                <div class="p-3" style="max-height: 400px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush">
-                                        @foreach($paragraphs as $p)
-                                            @php
-                                                $length = str_word_count($p);
-                                                $rowClass = $length < 40 ? 'text-danger' : ($length < 80 ? 'text-warning' : 'text-success');
-                                            @endphp
-                                            <li class="list-group-item bg-transparent {{ $rowClass }}" style="word-break: break-word;">
-                                                {{ $p }}<br>
-                                                <small class="text-muted">{{ $length }} words</small>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @php
-                    $shorts = array_filter($content['paragraphs'] ?? [], fn($p) => strlen($p) < 100);
-                @endphp
-                @if(is_array($shorts) && count($shorts) > 0)
-                    <div class="col-md-6">
-                        <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
-                            <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#shortParagraphCollapse" aria-expanded="false" aria-controls="shortParagraphCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>📌 Short Paragraphs</span>
-                                <span class="badge bg-warning text-dark">{{ count($shorts) }}</span>
-                            </button>
-                            <div class="collapse" id="shortParagraphCollapse">
-                                <div class="p-3" style="max-height: 300px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush">
-                                        @foreach($shorts as $p)
-                                            <li class="list-group-item bg-transparent text-danger" style="word-break: break-word;">
-                                                {{ $p }}<br>
-                                                <small class="text-muted">{{ str_word_count($p) }} mots</small>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @php
-                    $duplicates = $content['duplicate_paragraphs'] ?? [];
-                @endphp
-                @if(is_array($duplicates) && count($duplicates) > 0)
-                    <div class="col-md-6">
-                        <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
-                            <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#duplicateParagraphCollapse" aria-expanded="false" aria-controls="duplicateParagraphCollapse" style="background: transparent; border: none; color: #000;">
-                                <span>🔁 Duplicated paragraphs</span>
-                                <span class="badge bg-danger">{{ count($duplicates) }}</span>
-                            </button>
-                            <div class="collapse" id="duplicateParagraphCollapse">
-                                <div class="p-3" style="max-height: 300px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush">
-                                        @foreach($duplicates as $p)
-                                            <li class="list-group-item bg-transparent text-danger" style="word-break: break-word;">
-                                                {{ $p }}<br>
-                                                <small class="text-muted">{{ str_word_count($p) }} mots</small>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-            </div>
         </div>
-    @endif  {{-- ← THIS WAS MISSING --}}
+        
+        <div class="row pt-4">
+            {{-- Main Content --}}
+            @if($hasMainContent)
+                <div class="col-md-6">
+                    <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
+                        <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#mainContentCollapse" aria-expanded="false" aria-controls="mainContentCollapse" style="background: transparent; border: none; color: #000;">
+                            <span>📄 Extracted content</span>
+                            <span class="badge bg-light text-dark">Display</span>
+                        </button>
+                        <div class="collapse" id="mainContentCollapse">
+                            <div class="p-3" style="max-height: 400px; overflow-y: auto;">
+                                <button class="btn btn-sm btn-outline-dark mb-3" onclick="navigator.clipboard.writeText(`{{ $analysis->main_content }}`)">📋 Copier</button>
+                                <div style="white-space: pre-wrap; font-family: monospace; background-color: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; word-break: break-word;">
+                                    {{ $analysis->main_content }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="col-md-6">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>No main content available</strong><br>
+                        <small>
+                            The content could not be extracted from this page.
+                            @if($analysis->cloudflare_blocked)
+                                <br>🔒 The website appears to be protected by Cloudflare.
+                            @else
+                                <br>This could be due to JavaScript rendering, anti-bot protection, or page structure issues.
+                            @endif
+                        </small>
+                    </div>
+                </div>
+            @endif
+            
+            {{-- Paragraphs --}}
+            @if($hasParagraphs)
+                <div class="col-md-6">
+                    <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
+                        <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#paragraphCollapse" aria-expanded="false" aria-controls="paragraphCollapse" style="background: transparent; border: none; color: #000;">
+                            <span>🧾 Paragraphs extracted</span>
+                            <span class="badge bg-light text-dark">{{ count($paragraphs) }} Displayed</span>
+                        </button>
+                        <div class="collapse" id="paragraphCollapse">
+                            <div class="p-3" style="max-height: 400px; overflow-y: auto;">
+                                <ul class="list-group list-group-flush">
+                                    @foreach($paragraphs as $p)
+                                        @php
+                                            $length = str_word_count($p);
+                                            $rowClass = $length < 40 ? 'text-danger' : ($length < 80 ? 'text-warning' : 'text-success');
+                                        @endphp
+                                        <li class="list-group-item bg-transparent {{ $rowClass }}" style="word-break: break-word;">
+                                            {{ $p }}<br>
+                                            <small class="text-muted">{{ $length }} words</small>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="col-md-6">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>No paragraphs data available</strong><br>
+                        <small>No paragraph structure could be extracted from the content analysis.</small>
+                    </div>
+                </div>
+            @endif
 
-       
-    <div class="glass-cad mt-5 p-4" style="backdrop-filter: blur(12px); background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000;">
-        <div class="d-flex align-items-center mb-3">
-            <img src="https://www.google.com/s2/favicons?domain={{ parse_url($analysis->page_url, PHP_URL_HOST) }}"
-                 alt="favicon"
-                 style="width: 20px; height: 20px; margin-right: 8px;">
-            <span class="text-dark">{{ parse_url($analysis->page_url, PHP_URL_HOST) }}</span>
-        </div>
-        <h3 style="color:rgb(27, 76, 90);">{{ $analysis->page_title }}</h3>
-        <p style="color:rgb(29, 26, 26);">{{ $analysis->meta_description }}</p>
-        @if($analysis->readability_score)
+            {{-- Short Paragraphs --}}
             @php
-                $score = $analysis->readability_score;
-                $color = $score >= 60 ? '#00ff99' : ($score >= 40 ? '#ffcc00' : '#ff4d4d');
+                $shorts = array_filter($paragraphs, fn($p) => strlen($p) < 100);
             @endphp
-            <p class="mt-3">
-                <strong style="color: #000;">📊 Readability :</strong>
-                <span style="color: {{ $color }};">{{ round($score, 1) }} / 100</span>
-            </p>
-        @endif
-    </div>
+            
+            @if($hasParagraphs && count($shorts) > 0)
+                <div class="col-md-6">
+                    <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
+                        <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#shortParagraphCollapse" aria-expanded="false" aria-controls="shortParagraphCollapse" style="background: transparent; border: none; color: #000;">
+                            <span>📌 Short Paragraphs</span>
+                            <span class="badge bg-warning text-dark">{{ count($shorts) }}</span>
+                        </button>
+                        <div class="collapse" id="shortParagraphCollapse">
+                            <div class="p-3" style="max-height: 300px; overflow-y: auto;">
+                                <ul class="list-group list-group-flush">
+                                    @foreach($shorts as $p)
+                                        <li class="list-group-item bg-transparent text-danger" style="word-break: break-word;">
+                                            {{ $p }}<br>
+                                            <small class="text-muted">{{ str_word_count($p) }} words</small>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
-    
-
-
-    @if(!is_null($analysis->page_rank))
-    @php
-        $rank = round($analysis->page_rank, 2);
-        $color = $rank >= 6 ? '#00ff99' : ($rank >= 3 ? '#ffcc00' : '#ff4d4d');
-        $emoji = $rank >= 6 ? '🟢' : ($rank >= 3 ? '🟠' : '🔴');
-    @endphp
-
-    <div class="glass-car mt-4 p-4 " style="
-        backdrop-filter: blur(12px);
-        background: #f7f6fc;
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255,255,255,0.3);
-        color: #000;
-        margin-bottom: 20px;
-    ">
-
-<div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-        <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🔗 Domain PageRank</h5>
-    </div>
-       
-
-        <div class="flex items-center space-x-3 text-xl font-bold">
-            <span style="color: {{ $color }};">{{ $emoji }} {{ $rank }} / 10</span>
-            <span class="text-sm text-muted" style="font-size: 0.85rem;">
-            (according to OpenPageRank)
-            </span>
+            {{-- Duplicated Paragraphs --}}
+            @php
+                $duplicates = $content['duplicate_paragraphs'] ?? [];
+            @endphp
+            
+            @if($hasParagraphs && count($duplicates) > 0)
+                <div class="col-md-6">
+                    <div class="glass-card mb-4" style="backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
+                        <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#duplicateParagraphCollapse" aria-expanded="false" aria-controls="duplicateParagraphCollapse" style="background: transparent; border: none; color: #000;">
+                            <span>🔁 Duplicated paragraphs</span>
+                            <span class="badge bg-danger">{{ count($duplicates) }}</span>
+                        </button>
+                        <div class="collapse" id="duplicateParagraphCollapse">
+                            <div class="p-3" style="max-height: 300px; overflow-y: auto;">
+                                <ul class="list-group list-group-flush">
+                                    @foreach($duplicates as $p)
+                                        <li class="list-group-item bg-transparent text-danger" style="word-break: break-word;">
+                                            {{ $p }}<br>
+                                            <small class="text-muted">{{ str_word_count($p) }} words</small>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
-
-        @if(!is_null($analysis->page_rank_global))
-            <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
-            Overall ranking : <strong>#{{ number_format($analysis->page_rank_global) }}</strong>
-            </p>
-        @endif
-
-        <p class="mt-2 text-muted" style="font-size: 0.85rem;">
-        This score reflects the domain's public reputation on the global web, calculated from open source data.
-        </p>
     </div>
+
+@else
+    {{-- Message si pas de contenu --}}
+    @if($analysis)
+        <div class="alert alert-warning mt-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            No main content available for analysis.
+            @if($analysis->cloudflare_blocked)
+                <br><small>The website may be protected by Cloudflare.</small>
+            @endif
+        </div>
+    @endif
 @endif
 
+    @if($analysis)
+        <div class="glass-card mt-5 p-4" style="backdrop-filter: blur(12px); background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000;">
+            <div class="d-flex align-items-center mb-3">
+                <img src="https://www.google.com/s2/favicons?domain={{ parse_url($analysis->page_url ?? '', PHP_URL_HOST) }}"
+                     alt="favicon"
+                     style="width: 20px; height: 20px; margin-right: 8px;">
+                <span class="text-dark">{{ parse_url($analysis->page_url ?? '', PHP_URL_HOST) }}</span>
+            </div>
+            <h3 style="color:rgb(27, 76, 90);">{{ $analysis->page_title ?? 'N/A' }}</h3>
+            <p style="color:rgb(29, 26, 26);">{{ $analysis->meta_description ?? 'N/A' }}</p>
+            @if($analysis->readability_score)
+                @php
+                    $score = $analysis->readability_score;
+                    $color = $score >= 60 ? '#00ff99' : ($score >= 40 ? '#ffcc00' : '#ff4d4d');
+                @endphp
+                <p class="mt-3">
+                    <strong style="color: #000;">📊 Readability :</strong>
+                    <span style="color: {{ $color }};">{{ round($score, 1) }} / 100</span>
+                </p>
+            @endif
+        </div>
 
+        @if(!is_null($analysis->page_rank))
+            @php
+                $rank = round($analysis->page_rank, 2);
+                $color = $rank >= 6 ? '#00ff99' : ($rank >= 3 ? '#ffcc00' : '#ff4d4d');
+                $emoji = $rank >= 6 ? '🟢' : ($rank >= 3 ? '🟠' : '🔴');
+            @endphp
 
-<x-whois-card :analysis="$analysis" />
-<x-analysis-summary :analysis="$analysis" />
+            <div class="glass-card mt-4 p-4" style="
+                backdrop-filter: blur(12px);
+                background: #f7f6fc;
+                border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                color: #000;
+                margin-bottom: 20px;
+            ">
 
-<div id="analysis-data" data-analysis-id="{{ $analysis->id }}"></div>
+                <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+                    <h5 class="fw-bold mb-0" style=" color:#2e4db6;">🔗 Domain PageRank</h5>
+                </div>
 
+                <div class="flex items-center space-x-3 text-xl font-bold">
+                    <span style="color: {{ $color }};">{{ $emoji }} {{ $rank }} / 10</span>
+                    <span class="text-sm text-muted" style="font-size: 0.85rem;">
+                    (according to OpenPageRank)
+                    </span>
+                </div>
 
-<div class="btn-group mb-3" role="group">
-    <button class="btn btn-outline-primary" data-strategy="desktop">🖥️ Desktop</button>
-    <button class="btn btn-outline-warnin" style="color:#000; border: 1px solid #000;" data-strategy="mobile">📱 Mobile</button>
-</div>
-<div id="pagespeed-metrics-wrapper"></div>
-<div id="audit-fragments-wrapper"></div>
+                @if(!is_null($analysis->page_rank_global))
+                    <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
+                    Overall ranking : <strong>#{{ number_format($analysis->page_rank_global) }}</strong>
+                    </p>
+                @endif
 
+                <p class="mt-2 text-muted" style="font-size: 0.85rem;">
+                This score reflects the domain's public reputation on the global web, calculated from open source data.
+                </p>
+            </div>
+        @endif
 
-<div class="mb-2">
-    <li class="list-group-item border-0 p-0">
-        <a href="{{ route('user.projects.seo') }}" 
-           class="d-flex align-items-center text-decoration-none text-dark p-3 rounded-3 transition-all"
-           style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 4px solid #0d6efd !important;">
-            <span class="me-3 fs-5">✨</span>
-            <span class="fw-semibold">SEO Generator</span>
-            <span class="ms-auto text-muted small">→</span>
-        </a>
-    </li>
-</div>
+        <x-whois-card :analysis="$analysis" />
+        <x-analysis-summary :analysis="$analysis" />
 
+        <div id="analysis-data" data-analysis-id="{{ $analysis->id }}"></div>
 
+        <div class="btn-group mb-3" role="group">
+            <button class="btn btn-outline-primary" data-strategy="desktop">🖥️ Desktop</button>
+            <button class="btn btn-outline-warning" style="color:#000; border: 1px solid #000;" data-strategy="mobile">📱 Mobile</button>
+        </div>
+        <div id="pagespeed-metrics-wrapper"></div>
+        <div id="audit-fragments-wrapper"></div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        <div class="mb-2">
+            <li class="list-group-item border-0 p-0">
+                <a href="{{ route('user.projects.seo') }}" 
+                   class="d-flex align-items-center text-decoration-none text-dark p-3 rounded-3 transition-all"
+                   style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 4px solid #0d6efd !important;">
+                    <span class="me-3 fs-5">✨</span>
+                    <span class="fw-semibold">SEO Generator</span>
+                    <span class="ms-auto text-muted small">→</span>
+                </a>
+            </li>
+        </div>
+    @endif
 </div>
 
 @endsection
 
-
-
 <script>
+// Votre script JavaScript reste inchangé...
 document.addEventListener('DOMContentLoaded', function () {
     const analysisEl = document.getElementById('analysis-data');
     const metricsWrapper = document.getElementById('pagespeed-metrics-wrapper');
@@ -922,99 +977,98 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderAuditHTML(audits) {
-    let html = `<div class="pagespeed-audits">`;
+        let html = `<div class="pagespeed-audits">`;
 
-    const sections = {
-        opportunities: { 
-            title: 'Opportunities For Optimization', 
-            icon: '⚡',
-            color: 'warning'
-        },
-        diagnostics: { 
-            title: 'Technical Diagnostics', 
-            icon: '🔍',
-            color: 'info'
-        },
-        informative: { 
-            title: 'Informative Audits', 
-            icon: '📘',
-            color: 'secondary'
-        }
-    };
+        const sections = {
+            opportunities: { 
+                title: 'Opportunities For Optimization', 
+                icon: '⚡',
+                color: 'warning'
+            },
+            diagnostics: { 
+                title: 'Technical Diagnostics', 
+                icon: '🔍',
+                color: 'info'
+            },
+            informative: { 
+                title: 'Informative Audits', 
+                icon: '📘',
+                color: 'secondary'
+            }
+        };
 
-    let accordionId = 0;
+        let accordionId = 0;
 
-    for (const [type, items] of Object.entries(audits)) {
-        if (!items || items.length === 0) continue;
+        for (const [type, items] of Object.entries(audits)) {
+            if (!items || items.length === 0) continue;
 
-        accordionId++;
-        const section = sections[type];
-        const accordionSectionId = `accordion-${type}-${accordionId}`;
-        const collapseId = `collapse-${type}-${accordionId}`;
+            accordionId++;
+            const section = sections[type];
+            const accordionSectionId = `accordion-${type}-${accordionId}`;
+            const collapseId = `collapse-${type}-${accordionId}`;
 
-        html += `
-        <div class="accordion audit-accordion mb-3" id="${accordionSectionId}">
-            <div class="accordion-item border-${section.color}">
-                <h2 class="accordion-header" id="heading-${type}">
-                    <button class="accordion-button ${section.color} ${accordionId === 1 ? '' : 'collapsed'}" 
-                            type="button" 
-                            data-bs-toggle="collapse" 
-                            data-bs-target="#${collapseId}" 
-                            aria-expanded="${accordionId === 1 ? 'true' : 'false'}" 
-                            aria-controls="${collapseId}">
-                        <span class="d-flex align-items-center w-100">
-                            <span class="accordion-icon me-2">${section.icon}</span>
-                            <span class="accordion-title flex-grow-1">${section.title}</span>
-                            <span class="badge bg-${section.color} ms-2">${items.length}</span>
-                            <span class="accordion-arrow ms-2">▼</span>
-                        </span>
-                    </button>
-                </h2>
-                <div id="${collapseId}" 
-                     class="accordion-collapse collapse ${accordionId === 1 ? 'show' : ''}" 
-                     aria-labelledby="heading-${type}" 
-                     data-bs-parent="#${accordionSectionId}">
-                    <div class="accordion-body p-3">
-                        <div class="audit-grid">`;
-
-        for (const audit of items) {
-            const score = audit.score ?? null;
-            const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
-            
             html += `
-                            <div class="audit-card">
-                                <div class="audit-header">
-                                    <span class="audit-title">${audit.title}</span>
-                                    <div class="audit-badges">
-                                        ${type === 'opportunities' && audit.estimatedSavingsMs ? 
-                                          `<span class="badge bg-info mb-1">+${(audit.estimatedSavingsMs / 1000).toFixed(2)}s</span>` : ''}
-                                        ${score !== null && type !== 'informative' ? 
-                                          `<span class="badge bg-${badge}">${Math.round(score * 100)}%</span>` : ''}
-                                    </div>
-                                </div>
-                                <div class="audit-body">
-                                    <p class="audit-description">${audit.description || 'No description available'}</p>
-                                    ${audit.displayValue ? `<p class="audit-value">${audit.displayValue}</p>` : ''}
-                                    ${score !== null && type === 'opportunities' ? `
-                                    <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
-                                    </div>` : ''}
-                                </div>
-                            </div>`;
-        }
+            <div class="accordion audit-accordion mb-3" id="${accordionSectionId}">
+                <div class="accordion-item border-${section.color}">
+                    <h2 class="accordion-header" id="heading-${type}">
+                        <button class="accordion-button ${section.color} ${accordionId === 1 ? '' : 'collapsed'}" 
+                                type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#${collapseId}" 
+                                aria-expanded="${accordionId === 1 ? 'true' : 'false'}" 
+                                aria-controls="${collapseId}">
+                            <span class="d-flex align-items-center w-100">
+                                <span class="accordion-icon me-2">${section.icon}</span>
+                                <span class="accordion-title flex-grow-1">${section.title}</span>
+                                <span class="badge bg-${section.color} ms-2">${items.length}</span>
+                                <span class="accordion-arrow ms-2">▼</span>
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="${collapseId}" 
+                         class="accordion-collapse collapse ${accordionId === 1 ? 'show' : ''}" 
+                         aria-labelledby="heading-${type}" 
+                         data-bs-parent="#${accordionSectionId}">
+                        <div class="accordion-body p-3">
+                            <div class="audit-grid">`;
 
-        html += `
+            for (const audit of items) {
+                const score = audit.score ?? null;
+                const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
+                
+                html += `
+                                <div class="audit-card">
+                                    <div class="audit-header">
+                                        <span class="audit-title">${audit.title}</span>
+                                        <div class="audit-badges">
+                                            ${type === 'opportunities' && audit.estimatedSavingsMs ? 
+                                              `<span class="badge bg-info mb-1">+${(audit.estimatedSavingsMs / 1000).toFixed(2)}s</span>` : ''}
+                                            ${score !== null && type !== 'informative' ? 
+                                              `<span class="badge bg-${badge}">${Math.round(score * 100)}%</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="audit-body">
+                                        <p class="audit-description">${audit.description || 'No description available'}</p>
+                                        ${audit.displayValue ? `<p class="audit-value">${audit.displayValue}</p>` : ''}
+                                        ${score !== null && type === 'opportunities' ? `
+                                        <div class="progress mt-2" style="height: 4px;">
+                                            <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
+                                        </div>` : ''}
+                                    </div>
+                                </div>`;
+            }
+
+            html += `
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>`;
+            </div>`;
+        }
+
+        html += `</div>`;
+        return html;
     }
-
-    html += `</div>`;
-    return html;
-}
-
 
     function capitalize(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
@@ -1041,10 +1095,3 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2000);
 });
 </script>
-
-
-
-
-
-
-

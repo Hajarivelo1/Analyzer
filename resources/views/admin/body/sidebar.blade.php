@@ -61,6 +61,25 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link glass-nav-item" href="{{ route('user.projects.seo') }}" style="color: #f8fafc;">
+                                <i class="bi bi-magic me-2"></i> Seo Generator
+                            </a>
+                        </li>
+
+
+                        <li class="nav-item">
+    <a class="nav-link glass-nav-item" href="{{ route('admin.seo.history.index') }}" style="color: #f8fafc;">
+        <i class="bi bi-journal-text me-2"></i> SEO History
+    </a>
+</li>
+
+
+
+
+
+
+
+                        <li class="nav-item">
                             <a class="nav-link glass-nav-item" href="#" style="color: #f8fafc;">
                                 <i class="bi bi-bar-chart me-2"></i> Reports
                             </a>
