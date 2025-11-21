@@ -73,7 +73,7 @@ nav {
 
 .glass-user-area {
     background: rgba(30, 41, 59, 0.8);
-    backdrop-filter: blur(15px);
+    
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -522,7 +522,7 @@ nav {
 
 
 .page-speed-metrics {
-    backdrop-filter: blur(12px);
+    
     background: #f7f6fc;
     border-radius: 12px;
     padding: 2rem;
@@ -942,7 +942,7 @@ table {
 /* Correction spécifique pour les sections */
 .pagespeed-audits .glass-card {
     background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+    
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -1164,7 +1164,7 @@ table {
 
 /* Modal Glass Effect */
 #analysisLoadingModal .modal-content {
-    backdrop-filter: blur(20px);
+    
     background: rgba(255, 255, 255, 0.95);
 }
 
@@ -1173,7 +1173,7 @@ table {
 }
 /* Specific styles for new project loading modal */
 #newProjectLoadingModal .modal-content {
-    backdrop-filter: blur(20px);
+    
     background: rgba(255, 255, 255, 0.95);
 }
 
@@ -1197,7 +1197,7 @@ table {
 }
 /* Specific styles for new project loading modal */
 #newProjectLoadingModal .modal-content {
-    backdrop-filter: blur(20px);
+    
     background: rgba(255, 255, 255, 0.95);
 }
 
