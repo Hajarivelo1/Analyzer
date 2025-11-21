@@ -57,15 +57,18 @@ class SeoAnalysisController extends Controller
 
         Log::info('✅ SEO analysis created', ['analysis_id' => $seoAnalysis->id]);
 
-        // 🔥 APPROCHE ASYNCHRONE - PageSpeed en background
-        Log::info('🔥 DISPATCH PageSpeed en background', [
-            'analysis_id' => $seoAnalysis->id,
-            'queue_connection' => config('queue.default')
-        ]);
+        // 🔥 APPROCHE ASYNCHRONE - PageSpeed ET PageRank en background
+Log::info('🔥 DISPATCH PageSpeed ET PageRank en background', [
+    'analysis_id' => $seoAnalysis->id,
+    'has_fetchpagerank' => true, // ⬅️ AJOUTEZ CE LOG
+    'queue_connection' => config('queue.default')
+]);
 
         dispatch(new RunPageSpeedAudit($seoAnalysis, $project->base_url));
+        dispatch(new FetchPageRank($seoAnalysis)); // ⬅️ AJOUTEZ CETTE LIGNE
+        
 
-        Log::info('🔥 PageSpeed dispatché - Redirection immédiate');
+        Log::info('✅ Les deux jobs ont été dispatchés');
 
         // ✅ REDIRECTION IMMÉDIATE (ne pas attendre PageSpeed)
         return redirect()->route('project.show', [
@@ -83,6 +86,11 @@ class SeoAnalysisController extends Controller
                          ->withInput();
     }
 }
+
+
+
+
+
 
     /**
      * 🔥 OPTIMISÉ : Gestion du projet avec cache

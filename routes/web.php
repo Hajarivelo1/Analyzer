@@ -86,22 +86,27 @@ Route::middleware('auth')->group(function () {
     Route::post('/seo/history/reuse/{generation}', [SeoHistoryController::class, 'reuse'])
         ->name('seo.history.reuse');
 
-    // ✅ PageSpeed status route
-    Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis $analysis) {
-        \Log::info('🔍 Statut PageSpeed demandé', [
-            'analysis_id' => $analysis->id,
-            'desktop_score' => $analysis->pagespeed_desktop_score,
-            'mobile_score' => $analysis->pagespeed_mobile_score
-        ]);
+    // ✅ PageSpeed status route - VERSION CORRIGÉE
+Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis $analysis) {
+    \Log::info('🔍 Statut PageSpeed demandé', [
+        'analysis_id' => $analysis->id,
+        'desktop_score' => $analysis->pagespeed_desktop_score,
+        'mobile_score' => $analysis->pagespeed_mobile_score,
+        'page_rank' => $analysis->page_rank, // ⬅️ AJOUTEZ CES LOGS
+        'page_rank_global' => $analysis->page_rank_global // ⬅️
+    ]);
 
-        return response()->json([
-            'desktop_ready' => !empty($analysis->pagespeed_desktop_score),
-            'mobile_ready' => !empty($analysis->pagespeed_mobile_score),
-            'desktop_score' => $analysis->pagespeed_desktop_score,
-            'mobile_score' => $analysis->pagespeed_mobile_score,
-            'desktop_updated' => $analysis->updated_at->toDateTimeString(),
-        ]);
-    });
+    return response()->json([
+        'desktop_ready' => !empty($analysis->pagespeed_desktop_score),
+        'mobile_ready' => !empty($analysis->pagespeed_mobile_score),
+        'desktop_score' => $analysis->pagespeed_desktop_score,
+        'mobile_score' => $analysis->pagespeed_mobile_score,
+        'desktop_updated' => $analysis->updated_at->toDateTimeString(),
+        // ⬅️ AJOUTEZ CES DEUX LIGNES CRITIQUES
+        'page_rank' => $analysis->page_rank,
+        'page_rank_global' => $analysis->page_rank_global
+    ]);
+});
 
     // ✅ PageSpeed data route
     Route::get('/seo-analysis/{analysis}/pagespeed', function (\App\Models\SeoAnalysis $analysis) {

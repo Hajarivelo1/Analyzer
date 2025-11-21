@@ -917,41 +917,54 @@
             @endif
         </div>
 
-        @if(!is_null($analysis->page_rank))
-            @php
-                $rank = round($analysis->page_rank, 2);
-                $color = $rank >= 6 ? '#00ff99' : ($rank >= 3 ? '#ffcc00' : '#ff4d4d');
-                $emoji = $rank >= 6 ? '🟢' : ($rank >= 3 ? '🟠' : '🔴');
-            @endphp
-            <div class="glass-card mt-4 p-4" style="
-                backdrop-filter: blur(12px);
-                background: #f7f6fc;
-                border-radius: 16px;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-                border: 1px solid rgba(255,255,255,0.3);
-                color: #000;
-                margin-bottom: 20px;
-            ">
-                <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-                    <h5 class="fw-bold mb-0" style="color:#2e4db6;">🔗 Domain PageRank</h5>
-                </div>
-                <div class="flex items-center space-x-3 text-xl font-bold">
-                    <span style="color: {{ $color }};">{{ $emoji }} {{ $rank }} / 10</span>
-                    <span class="text-sm text-muted" style="font-size: 0.85rem;">
-                        (according to OpenPageRank)
-                    </span>
-                </div>
-                @if(!is_null($analysis->page_rank_global))
-                    <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
-                        Overall ranking : <strong>#{{ number_format($analysis->page_rank_global) }}</strong>
-                    </p>
-                @endif
-                <p class="mt-2 text-muted" style="font-size: 0.85rem;">
-                    This score reflects the domain's public reputation on the global web, calculated from open source data.
-                </p>
-            </div>
-        @endif
 
+
+
+        {{-- Section PageRank avec rafraîchissement automatique --}}
+
+        <div data-pagerank-section> {{-- ⬅️ AJOUTEZ CET ATTRIBUT --}}
+        @if(!is_null($analysis->page_rank))
+        {{-- Afficher le vrai PageRank --}}
+        @php
+            $rank = round($analysis->page_rank, 2);
+            $color = $rank >= 6 ? '#00ff99' : ($rank >= 3 ? '#ffcc00' : '#ff4d4d');
+            $emoji = $rank >= 6 ? '🟢' : ($rank >= 3 ? '🟠' : '🔴');
+        @endphp
+        <div class="glass-card mt-4 p-4">
+            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+                <h5 class="fw-bold mb-0" style="color:#2e4db6;">🔗 Domain PageRank</h5>
+            </div>
+            <div class="flex items-center space-x-3 text-xl font-bold">
+                <span style="color: {{ $color }};">{{ $emoji }} {{ $rank }} / 10</span>
+                <span class="text-sm text-muted" style="font-size: 0.85rem;">
+                    (according to OpenPageRank)
+                </span>
+            </div>
+            @if(!is_null($analysis->page_rank_global))
+                <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
+                    Overall ranking : <strong>#{{ number_format($analysis->page_rank_global) }}</strong>
+                </p>
+            @endif
+            <p class="mt-2 text-muted" style="font-size: 0.85rem;">
+                This score reflects the domain's public reputation on the global web, calculated from open source data.
+            </p>
+        </div>
+    @else
+        {{-- Placeholder en attendant --}}
+        <div class="glass-card mt-4 p-4">
+            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+                <h5 class="fw-bold mb-0" style="color:#2e4db6;">🔗 Domain PageRank</h5>
+            </div>
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted">Calculating PageRank...</p>
+                <small class="text-info">This may take a few moments</small>
+            </div>
+        </div>
+    @endif
+    </div>
         <x-whois-card :analysis="$analysis" />
         <x-analysis-summary :analysis="$analysis" />
 
@@ -1071,36 +1084,210 @@
         }
 
         function checkPageSpeedStatus() {
-            fetch(`/seo-analysis/${analysisId}/status`)
-                .then(response => {
-                    if (!response.ok) throw new Error('Statut HTTP invalide');
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('📊 Statut:', data);
-                    const desktopReady = data.desktop_ready && data.desktop_score !== null;
-                    const mobileReady = data.mobile_ready && data.mobile_score !== null;
-                    if (desktopReady) {
-                        console.log('✅ Données Desktop prêtes !');
-                        stopWatching();
-                        showNotification('✅ Données Desktop disponibles', 'success');
-                        if (currentStrategy === 'desktop') {
-                            fetchPageSpeed('desktop', false, true);
-                        }
-                    }
-                    if (mobileReady) {
-                        console.log('✅ Données Mobile prêtes !');
-                        showNotification('✅ Données Mobile disponibles', 'success');
-                    }
-                })
-                .catch(error => {
-                    console.log('❌ Erreur surveillance:', error);
-                });
+    fetch(`/seo-analysis/${analysisId}/status`)
+        .then(response => {
+            if (!response.ok) throw new Error('Statut HTTP invalide');
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Statut complet:', data);
+            
+            let everythingReady = true;
+            
+            // ✅ Vérifier PageSpeed Desktop
+            const desktopReady = data.desktop_ready && data.desktop_score !== null;
+            const mobileReady = data.mobile_ready && data.mobile_score !== null;
+            
+            if (desktopReady) {
+                console.log('✅ Données Desktop prêtes !');
+                if (currentStrategy === 'desktop') {
+                    fetchPageSpeed('desktop', false, true);
+                }
+            } else {
+                everythingReady = false;
+            }
+            
+            if (mobileReady) {
+                console.log('✅ Données Mobile prêtes !');
+            } else {
+                everythingReady = false;
+            }
+            
+            // 🆕 Vérifier PageRank
+            if (data.page_rank !== null && !window.pageRankDisplayed) {
+                console.log('✅ PageRank disponible!');
+                window.pageRankDisplayed = true;
+                showNotification('✅ PageRank disponible', 'success');
+                updatePageRankSection(data.page_rank, data.page_rank_global);
+            } else if (data.page_rank === null) {
+                everythingReady = false;
+                console.log('⏳ PageRank en attente...');
+            }
+            
+            // Arrêter la surveillance seulement quand TOUT est prêt
+            if (everythingReady) {
+                console.log('🎯 Toutes les données sont prêtes !');
+                stopWatching();
+                showNotification('✅ Analyse SEO complète terminée', 'success');
+            }
+        })
+        .catch(error => {
+            console.log('❌ Erreur surveillance:', error);
+        });
+}
+
+
+// 🔍 SURVEILLANCE AUTOMATIQUE UNIFIÉE
+function startWatching() {
+    if (isWatching) return;
+    isWatching = true;
+    console.log('🔍 Surveillance automatique activée');
+    
+    let checkCount = 0;
+    const maxChecks = 60; // 5 minutes max (60 * 5s)
+    
+    watchInterval = setInterval(() => {
+        checkAllStatus();
+        checkCount++;
+        
+        if (checkCount >= maxChecks) {
+            console.log('⏹️ Surveillance arrêtée (timeout)');
+            stopWatching();
         }
+    }, 5000); // Vérifier toutes les 5 secondes
+    
+    // Vérifier immédiatement
+    checkAllStatus();
+}
+
+function checkAllStatus() {
+    fetch(`/seo-analysis/${analysisId}/status`)
+        .then(response => {
+            if (!response.ok) throw new Error('Statut HTTP invalide');
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Statut complet:', data);
+            
+            let everythingReady = true;
+            
+            // ✅ Vérifier PageSpeed Desktop
+            const desktopReady = data.desktop_ready && data.desktop_score !== null;
+            const mobileReady = data.mobile_ready && data.mobile_score !== null;
+            
+            if (desktopReady && !window.desktopDisplayed) {
+                console.log('✅ Données Desktop prêtes !');
+                window.desktopDisplayed = true;
+                showNotification('✅ Données Desktop disponibles', 'success');
+                if (currentStrategy === 'desktop') {
+                    fetchPageSpeed('desktop', false, true);
+                }
+            }
+            
+            if (mobileReady && !window.mobileDisplayed) {
+                console.log('✅ Données Mobile prêtes !');
+                window.mobileDisplayed = true;
+                showNotification('✅ Données Mobile disponibles', 'success');
+            }
+            
+            // 🆕 Vérifier PageRank - CORRIGÉ
+            if (data.page_rank !== null && data.page_rank !== undefined && !window.pageRankDisplayed) {
+                console.log('✅ PageRank disponible!', data.page_rank);
+                window.pageRankDisplayed = true;
+                showNotification('✅ PageRank disponible', 'success');
+                updatePageRankSection(data.page_rank, data.page_rank_global);
+            } else if (data.page_rank === null || data.page_rank === undefined) {
+                everythingReady = false;
+                console.log('⏳ PageRank en attente...', data.page_rank);
+            }
+            
+            if (!desktopReady || !mobileReady) {
+                everythingReady = false;
+            }
+            
+            // Arrêter la surveillance seulement quand TOUT est prêt
+            if (everythingReady) {
+                console.log('🎯 Toutes les données sont prêtes !');
+                stopWatching();
+                showNotification('✅ Analyse SEO complète terminée', 'success');
+            }
+        })
+        .catch(error => {
+            console.log('❌ Erreur surveillance:', error);
+        });
+}
+
+
+
+
 
         function showNotification(message, type = 'info') {
-            console.log(`📢 ${message}`);
+    // Couleurs et icônes selon le type
+    const config = {
+        success: { 
+            bg: 'bg-success', 
+            icon: '✅',
+            title: 'Success'
+        },
+        warning: { 
+            bg: 'bg-warning text-dark', 
+            icon: '⚠️',
+            title: 'Attention'
+        },
+        error: { 
+            bg: 'bg-danger', 
+            icon: '❌',
+            title: 'Error'
+        },
+        info: { 
+            bg: 'bg-info', 
+            icon: 'ℹ️',
+            title: 'Information'
         }
+    };
+
+    const { bg, icon, title } = config[type] || config.info;
+
+    // Créer le container s'il n'existe pas
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+
+    const toastId = 'toast-' + Date.now();
+    
+    const toastHTML = `
+        <div id="${toastId}" class="toast ${bg}" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">${icon} ${title}</strong>
+                <small>à l'instant</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Afficher la notification
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 4000
+    });
+    toast.show();
+
+    // Nettoyer après fermeture
+    toastElement.addEventListener('hidden.bs.toast', function () {
+        this.remove();
+    });
+}
 
         function updateButtonStates(activeStrategy) {
             document.querySelectorAll('[data-strategy]').forEach(btn => {
@@ -1434,4 +1621,94 @@ function getSectionConfig(sectionType) {
             startWatching();
         }, 2000);
     });
+
+    
+
+
+// Rafraîchissement automatique quand PageRank est disponible
+function checkForPageRank() {
+    const analysisId = {{ $analysis->id }};
+    
+    fetch(`/seo-analysis/${analysisId}/status`)
+        .then(response => response.json())
+        .then(data => {
+            // Si PageRank est maintenant disponible
+            if (data.page_rank !== null && !window.pageRankDisplayed) {
+                console.log('🔄 PageRank disponible, rafraîchissement...');
+                window.pageRankDisplayed = true;
+                
+                // Option 1: Rafraîchir la page
+                // location.reload();
+                
+                // Option 2: Mettre à jour juste la section PageRank
+                updatePageRankSection(data.page_rank, data.page_rank_global);
+            }
+        })
+        .catch(error => console.log('❌ Erreur vérification PageRank:', error));
+}
+
+function updatePageRankSection(rank, globalRank) {
+    console.log('🎯 Mise à jour PageRank section:', { rank, globalRank });
+    
+    // ⚠️ VÉRIFIEZ QUE LES VALEURS SONT VALIDES
+    if (rank === undefined || rank === null) {
+        console.error('❌ PageRank est undefined/null:', rank);
+        return;
+    }
+    
+    const pageRankSection = document.querySelector('[data-pagerank-section]');
+    if (!pageRankSection) {
+        console.error('❌ Section PageRank non trouvée');
+        return;
+    }
+    
+    const safeRank = rank || 0;
+    const safeGlobalRank = globalRank || null;
+    
+    const color = safeRank >= 6 ? '#00ff99' : safeRank >= 3 ? '#ffcc00' : '#ff4d4d';
+    const emoji = safeRank >= 6 ? '🟢' : safeRank >= 3 ? '🟠' : '🔴';
+    
+    pageRankSection.innerHTML = `
+        <div class="glass-card mt-4 p-4">
+            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
+                <h5 class="fw-bold mb-0" style="color:#2e4db6;">🔗 Domain PageRank</h5>
+            </div>
+            <div class="flex items-center space-x-3 text-xl font-bold">
+                <span style="color: ${color};">${emoji} ${safeRank} / 10</span>
+                <span class="text-sm text-muted" style="font-size: 0.85rem;">
+                    (according to OpenPageRank)
+                </span>
+            </div>
+            ${safeGlobalRank ? `
+            <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
+                Overall ranking : <strong>#${new Intl.NumberFormat().format(safeGlobalRank)}</strong>
+            </p>
+            ` : ''}
+            <p class="mt-2 text-muted" style="font-size: 0.85rem;">
+                This score reflects the domain's public reputation on the global web, calculated from open source data.
+            </p>
+        </div>
+    `;
+    
+    console.log('✅ Section PageRank mise à jour avec succès');
+}
+
+// Vérifier toutes les 5 secondes pendant 2 minutes
+let checkCount = 0;
+const pageRankInterval = setInterval(() => {
+    checkForPageRank();
+    checkCount++;
+    if (checkCount > 24) { // 2 minutes max
+        clearInterval(pageRankInterval);
+    }
+}, 5000);
+
+// Vérifier immédiatement au chargement
+setTimeout(checkForPageRank, 2000);
+
+
+
+
+
+    
 </script>
