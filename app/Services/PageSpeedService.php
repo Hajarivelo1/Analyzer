@@ -4,456 +4,360 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class PageSpeedService
 {
-    public function runAudit(string $url, string $strategy = 'desktop'): ?array
-    {
-        Log::info('🎯 PageSpeedService - Début de runAudit', [
+    // ⏱️ CONFIGURATION ULTRA-RAPIDE
+    private const TIMEOUT = 120;
+    private const RETRIES = 1;
+    private const CACHE_DURATION = 1800; // 30 minutes
+
+    /**
+     * 🔥 AUDIT ULTRA-RAPIDE - Une seule requête optimisée
+     */
+    /**
+ * 🔥 AUDIT ULTRA-RAPIDE - VERSION CORRIGÉE
+ */
+public function runAudit(string $url, string $strategy = 'desktop'): ?array
+{
+    $cacheKey = "pagespeed_{$strategy}_" . md5($url);
+    
+    if (Cache::has($cacheKey)) {
+        Log::info('📦 PageSpeed depuis cache', ['strategy' => $strategy]);
+        return Cache::get($cacheKey);
+    }
+
+    Log::info('⚡ PageSpeed audit RAPIDE', ['url' => $url, 'strategy' => $strategy]);
+
+    try {
+        $baseUrl = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
+        
+        // ✅ CORRECTION : Utiliser la syntaxe correcte pour multiples catégories
+        $queryParams = [
             'url' => $url,
+            'strategy' => $strategy,
+            'key' => config('services.pagespeed.key'),
+            'locale' => 'fr',
+        ];
+
+        // ✅ CORRECTION : Ajouter les catégories comme paramètres séparés
+        $categories = ['PERFORMANCE', 'ACCESSIBILITY', 'SEO', 'BEST_PRACTICES'];
+        $queryString = http_build_query($queryParams);
+        
+        // ✅ CORRECTION : Ajouter chaque catégorie individuellement
+        foreach ($categories as $category) {
+            $queryString .= "&category=" . $category;
+        }
+
+        Log::info('🔗 URL PageSpeed appelée', [
+            'url' => $baseUrl . '?' . $queryString
+        ]);
+
+        $response = Http::timeout(self::TIMEOUT)
+            ->retry(self::RETRIES, 500)
+            ->withOptions([
+                'verify' => false,
+                'connect_timeout' => 10,
+            ])
+            ->get($baseUrl . '?' . $queryString); // ✅ Utiliser la query string construite
+
+        Log::info('📡 Réponse PageSpeed', [
+            'status' => $response->status(),
             'strategy' => $strategy
         ]);
 
-        try {
-            $strategies = [$strategy, $strategy === 'desktop' ? 'mobile' : 'desktop'];
-            $lastError = null;
-            $fullUrl = ''; // 🔥 CORRECTION : Déclarer la variable avant le bloc try
-
-            foreach ($strategies as $currentStrategy) {
-                try {
-                    Log::info("🎯 Essai avec stratégie: $currentStrategy");
-
-                    $baseUrl = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
-
-                    $queryParams = [
-                        'url=' . urlencode($url),
-                        'strategy=' . $currentStrategy,
-                        'key=' . config('services.pagespeed.key'),
-                        'locale=en',
-                    ];
-
-                    $categories = ['PERFORMANCE', 'ACCESSIBILITY', 'SEO', 'BEST_PRACTICES'];
-                    foreach ($categories as $category) {
-                        $queryParams[] = 'category=' . $category;
-                    }
-
-                    $queryString = implode('&', $queryParams);
-                    $fullUrl = $baseUrl . '?' . $queryString; // 🔥 CORRECTION : Assigner à la variable déclarée
-
-                    Log::info('🔗 URL PageSpeed construite', [
-                        'strategy' => $currentStrategy,
-                        'url_short' => substr($fullUrl, 0, 120) . '...'
-                    ]);
-
-                    $response = Http::timeout(300)
-                        ->withOptions([
-                            'verify' => app()->environment('local') ? false : true
-                        ])
-                        ->get($fullUrl);
-
-                    Log::info('📡 PageSpeedService - Réponse API reçue', [
-                        'status' => $response->status(),
-                        'strategy' => $currentStrategy
-                    ]);
-
-                    if ($response->successful()) {
-                        $data = $response->json();
-
-                        if (isset($data['lighthouseResult'])) {
-                            Log::info("✅ Succès avec stratégie: $currentStrategy", [
-                                'categories_retournées' => array_keys($data['lighthouseResult']['categories'] ?? [])
-                            ]);
-                            return $data;
-                        }
-
-                        Log::warning("⚠️ Réponse sans lighthouseResult", [
-                            'strategy' => $currentStrategy,
-                            'body' => substr($response->body(), 0, 200) // 🔥 CORRECTION : Limiter la taille du log
-                        ]);
-                    } else {
-                        $lastError = $response->body();
-                        Log::warning("❌ Échec stratégie $currentStrategy", [
-                            'status' => $response->status(),
-                            'error' => substr($lastError, 0, 200) // 🔥 CORRECTION : Limiter la taille du log
-                        ]);
-
-                        if ($response->status() === 500) {
-                            continue;
-                        }
-                    }
-                } catch (\Exception $e) {
-                    $lastError = $e->getMessage();
-                    Log::error("💥 Erreur stratégie $currentStrategy", [
-                        'message' => $e->getMessage()
-                    ]);
-                    continue;
-                }
-            }
-
-            Log::error('💥 Toutes les stratégies ont échoué', [
-                'last_error' => $lastError ? substr($lastError, 0, 200) : 'Unknown error' // 🔥 CORRECTION : Gérer le cas null
-            ]);
-            return null;
-
-        } catch (\Exception $e) {
-            Log::error('❌ PageSpeed Insights failed', [
-                'message' => $e->getMessage(),
-                'url' => $url,
-                'strategy' => $strategy
-            ]);
-            return null;
-        }
-    }
-
-    /**
-     * 🔥 NOUVELLE MÉTHODE : Test avec une seule catégorie à la fois
-     */
-    public function runMultiCategoryAudit(string $url, string $strategy = 'desktop'): ?array
-    {
-        Log::info('🎯 Début audit multi-catégories', ['url' => $url]);
-        
-        $allData = [];
-        $categories = ['PERFORMANCE', 'ACCESSIBILITY', 'SEO', 'BEST_PRACTICES'];
-        
-        foreach ($categories as $category) {
-            try {
-                $baseUrl = 'https://pagespeedonline.googleapis.com/pagespeedonline/v5/runPagespeed';
+        if ($response->successful()) {
+            $data = $response->json();
+            
+            // ✅ VALIDATION AVEC DEBUG
+            if ($this->isValidResponse($data)) {
+                Cache::put($cacheKey, $data, self::CACHE_DURATION);
                 
-                $queryParams = http_build_query([
-                    'url' => $url,
-                    'strategy' => $strategy,
-                    'key' => config('services.pagespeed.key'),
-                    'category' => $category,
-                    'locale' => 'fr',
+                // ✅ SCORE ALTERNATIF - Chercher le score dans différents endroits
+                $performanceScore = $this->extractPerformanceScore($data);
+                
+                Log::info('✅ PageSpeed réussi', [
+                    'performance_score' => $performanceScore ?? 'N/A',
+                    'all_categories' => array_keys($data['lighthouseResult']['categories'] ?? [])
                 ]);
                 
-                $fullUrl = $baseUrl . '?' . $queryParams;
-                
-                Log::info("🔗 Audit catégorie: $category", ['url_short' => substr($fullUrl, 0, 80) . '...']);
-                
-                $response = Http::timeout(300)->get($fullUrl);
-                
-                if ($response->successful()) {
-                    $data = $response->json();
-                    if (isset($data['lighthouseResult'])) {
-                        $allData[$category] = $data;
-                        Log::info("✅ Catégorie $category réussie", [
-                            'score' => $data['lighthouseResult']['categories'][strtolower($category)]['score'] ?? 'non trouvé'
-                        ]);
-                    }
-                } else {
-                    Log::warning("❌ Catégorie $category échouée", ['status' => $response->status()]);
-                    $allData[$category] = null;
-                }
-                
-                sleep(1);
-                
-            } catch (\Exception $e) {
-                Log::error("💥 Erreur catégorie $category", ['message' => $e->getMessage()]);
-                $allData[$category] = null;
+                return $data;
+            } else {
+                Log::warning('⚠️ Réponse PageSpeed invalide selon isValidResponse');
+                // ✅ SAUVEGARDER QUAND MÊME POUR DEBUG
+                Log::info('🔍 DEBUG Données reçues', [
+                    'data_keys' => array_keys($data),
+                    'lighthouse_keys' => array_keys($data['lighthouseResult'] ?? [])
+                ]);
             }
+        } else {
+            $this->handleErrorResponse($response->status());
         }
-        
-        return $this->mergeCategoryData($allData);
+
+    } catch (\Exception $e) {
+        Log::error('💥 PageSpeed erreur', ['message' => $e->getMessage()]);
+    }
+
+    return null;
+}
+
+
+
+private function extractPerformanceScore(array $data): ?int
+{
+    $lighthouseResult = $data['lighthouseResult'];
+    
+    // 1. Depuis les catégories
+    if (isset($lighthouseResult['categories']['performance']['score'])) {
+        return round($lighthouseResult['categories']['performance']['score'] * 100);
     }
     
-    /**
-     * Fusionner les données des différentes catégories
-     */
-    private function mergeCategoryData(array $allData): array
-    {
-        $merged = [
-            'lighthouseResult' => [
-                'categories' => [],
-                'audits' => []
-            ]
-        ];
-        
-        foreach ($allData as $category => $data) {
-            if ($data && isset($data['lighthouseResult']['categories'][strtolower($category)])) {
-                $categoryKey = strtolower($category);
-                $merged['lighthouseResult']['categories'][$categoryKey] = 
-                    $data['lighthouseResult']['categories'][$categoryKey];
-            }
-            
-            if ($category === 'PERFORMANCE' && $data && isset($data['lighthouseResult']['audits'])) {
-                $merged['lighthouseResult']['audits'] = $data['lighthouseResult']['audits'];
-            }
+    // 2. Depuis les audits
+    if (isset($lighthouseResult['audits']['performance-score']['score'])) {
+        return round($lighthouseResult['audits']['performance-score']['score'] * 100);
+    }
+    
+    // 3. Depuis le score global
+    if (isset($lighthouseResult['categories']['performance'])) {
+        $performance = $lighthouseResult['categories']['performance'];
+        if (isset($performance['score'])) {
+            return round($performance['score'] * 100);
         }
-        
-        Log::info('🔗 Données fusionnées', [
-            'categories_trouvées' => array_keys($merged['lighthouseResult']['categories'])
+    }
+    
+    return null;
+}
+
+    /**
+     * 🔥 VALIDATION RAPIDE
+     */
+    private function isValidResponse(?array $data): bool
+{
+    if (!is_array($data) || !isset($data['lighthouseResult'])) {
+        Log::warning('❌ Réponse invalide - pas de lighthouseResult');
+        return false;
+    }
+
+    $lighthouseResult = $data['lighthouseResult'];
+    
+    // ✅ DEBUG TEMPORAIRE - Afficher la structure complète
+    Log::info('🔍 DEBUG Structure réponse', [
+        'has_categories' => isset($lighthouseResult['categories']),
+        'has_audits' => isset($lighthouseResult['audits']),
+        'categories_keys' => isset($lighthouseResult['categories']) ? array_keys($lighthouseResult['categories']) : 'NONE',
+        'audits_count' => isset($lighthouseResult['audits']) ? count($lighthouseResult['audits']) : 0,
+        'first_5_audits' => isset($lighthouseResult['audits']) ? array_slice(array_keys($lighthouseResult['audits']), 0, 5) : []
+    ]);
+
+    // ✅ CORRECTION : Accepter même sans catégories, si on a des audits
+    if (isset($lighthouseResult['audits']) && !empty($lighthouseResult['audits'])) {
+        return true;
+    }
+    
+    // ✅ Ou si on a des catégories
+    if (isset($lighthouseResult['categories']) && !empty($lighthouseResult['categories'])) {
+        return true;
+    }
+    
+    Log::warning('❌ Réponse invalide - ni audits ni catégories');
+    return false;
+}
+
+    /**
+     * 🔥 GESTION D'ERREUR SIMPLIFIÉE
+     */
+    private function handleErrorResponse(int $status): void
+    {
+        $errorMap = [
+            400 => 'Requête invalide',
+            403 => 'Clé API invalide', 
+            429 => 'Quota dépassé',
+            500 => 'Erreur serveur Google',
+        ];
+
+        Log::warning('❌ Erreur API PageSpeed', [
+            'status' => $status,
+            'message' => $errorMap[$status] ?? 'Erreur inconnue'
         ]);
-        
-        return $merged;
     }
 
     /**
-     * 🔥 CORRECTION : Méthode extractCoreMetrics améliorée
+     * 🔥 AUDIT MULTI-CATÉGORIES OPTIMISÉ
+     */
+    public function runMultiCategoryAudit(string $url, string $strategy = 'desktop'): ?array
+{
+    Log::info('🎯 Audit multi-catégories RAPIDE', ['url' => $url]);
+    
+    try {
+        $baseUrl = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
+        
+        // ✅ MÊME CORRECTION ICI
+        $queryParams = [
+            'url' => $url,
+            'strategy' => $strategy,
+            'key' => config('services.pagespeed.key'),
+            'locale' => 'fr',
+        ];
+
+        $categories = ['PERFORMANCE', 'ACCESSIBILITY', 'SEO', 'BEST_PRACTICES'];
+        foreach ($categories as $category) {
+            $queryParams["category"] = $category;
+        }
+
+        $response = Http::timeout(self::TIMEOUT)
+            ->get($baseUrl, $queryParams); // ✅ Tableau directement
+
+        if ($response->successful()) {
+            $data = $response->json();
+            
+            if ($this->isValidResponse($data)) {
+                Log::info('✅ Audit multi-catégories réussi', [
+                    'categories' => array_keys($data['lighthouseResult']['categories'])
+                ]);
+                return $data;
+            }
+        }
+
+    } catch (\Exception $e) {
+        Log::error('💥 Audit multi-catégories échoué', ['message' => $e->getMessage()]);
+    }
+
+    return null;
+}
+
+    /**
+     * 🔥 EXTRACTION ULTRA-RAPIDE des métriques
      */
     public function extractCoreMetrics(?array $data): array
     {
-        if (!is_array($data) || !isset($data['lighthouseResult']['audits'])) {
-            Log::warning('⚠️ extractCoreMetrics received invalid data', [
-                'data_type' => gettype($data),
-                'has_audits' => isset($data['lighthouseResult']['audits'])
-            ]);
+        if (!$this->isValidResponse($data)) {
             return [];
         }
 
         $audits = $data['lighthouseResult']['audits'];
         $metrics = [];
         
-        try {
-            // Métriques principales Core Web Vitals
-            $coreMetrics = [
-                'first-contentful-paint' => 'First Contentful Paint',
-                'largest-contentful-paint' => 'Largest Contentful Paint',
-                'cumulative-layout-shift' => 'Cumulative Layout Shift',
-                'total-blocking-time' => 'Total Blocking Time',
-                'speed-index' => 'Speed Index',
-                'interactive' => 'Time to Interactive',
-                'first-meaningful-paint' => 'First Meaningful Paint'
-            ];
-            
-            foreach ($coreMetrics as $metricKey => $metricName) {
-                if (isset($audits[$metricKey])) {
-                    $audit = $audits[$metricKey];
-                    $metrics[$metricKey] = [
-                        'title' => $metricName,
-                        'score' => $audit['score'] ?? null,
-                        'displayValue' => $audit['displayValue'] ?? null,
-                        'numericValue' => $audit['numericValue'] ?? null,
-                        'scoreDisplayMode' => $audit['scoreDisplayMode'] ?? 'numeric'
-                    ];
-                    
-                    Log::debug("📊 Métrique extraite: $metricKey", [
-                        'score' => $metrics[$metricKey]['score'],
-                        'displayValue' => $metrics[$metricKey]['displayValue']
-                    ]);
-                } else {
-                    Log::debug("❌ Métrique non trouvée: $metricKey");
-                }
+        // 🔥 Uniquement les Core Web Vitals essentiels
+        $essentialMetrics = [
+            'first-contentful-paint' => 'First Contentful Paint',
+            'largest-contentful-paint' => 'Largest Contentful Paint',
+            'cumulative-layout-shift' => 'Cumulative Layout Shift', 
+            'total-blocking-time' => 'Total Blocking Time',
+        ];
+        
+        foreach ($essentialMetrics as $metricKey => $metricName) {
+            if (isset($audits[$metricKey])) {
+                $audit = $audits[$metricKey];
+                $metrics[$metricKey] = [
+                    'title' => $metricName,
+                    'score' => $audit['score'] ?? null,
+                    'displayValue' => $audit['displayValue'] ?? null,
+                    'numericValue' => $audit['numericValue'] ?? null,
+                ];
             }
-            
-        } catch (\Exception $e) {
-            Log::error('❌ Erreur lors de l\'extraction des métriques', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
         }
 
         return $metrics;
     }
 
     /**
-     * Méthode helper pour extraire la valeur d'un audit de manière sécurisée
+     * 🔥 EXTRACTION RAPIDE des scores
      */
-    private function getAuditValue(array $audits, string $auditKey): ?string
-    {
-        if (!isset($audits[$auditKey])) {
-            Log::debug("Audit {$auditKey} non trouvé");
-            return null;
-        }
-
-        $audit = $audits[$auditKey];
-        
-        if (isset($audit['displayValue'])) {
-            return $audit['displayValue'];
-        }
-        
-        if (isset($audit['numericValue'])) {
-            return $this->formatNumericValue($audit['numericValue'], $auditKey);
-        }
-        
-        return null;
-    }
-
-    /**
-     * Formater les valeurs numériques selon le type d'audit
-     */
-    private function formatNumericValue(float $value, string $auditKey): string
-    {
-        switch ($auditKey) {
-            case 'first-contentful-paint':
-            case 'largest-contentful-paint':
-            case 'speed-index':
-            case 'interactive':
-            case 'first-meaningful-paint':
-                return round($value / 1000, 1) . ' s';
-                
-            case 'cumulative-layout-shift':
-                return number_format($value, 3);
-                
-            case 'total-blocking-time':
-                return round($value) . ' ms';
-                
-            default:
-                return (string) $value;
-        }
-    }
-
-    /**
-     * 🔥 CORRECTION : Méthode extractScoresByCategory améliorée
-     */
-    public function extractScoresByCategory(array $auditResult): array
+    public function extractAllScores(array $auditResult): array
     {
         if (!isset($auditResult['lighthouseResult']['categories'])) {
-            Log::warning('⚠️ Aucune catégorie trouvée dans extractScoresByCategory');
             return [
-                'accessibilité' => 0,
+                'performance' => 0,
+                'accessibility' => 0,
                 'seo' => 0,
-                'bonnes pratiques' => 0,
-               
+                'best-practices' => 0
             ];
         }
 
         $categories = $auditResult['lighthouseResult']['categories'];
-        $map = [
-            'accessibility' => 'accessibilité',
-            'seo' => 'seo',
-            'best-practices' => 'bonnes pratiques',
-           
-        ];
-    
         $scores = [];
-    
-        foreach ($map as $key => $label) {
-            $scores[$label] = isset($categories[$key]['score'])
-                ? round($categories[$key]['score'] * 100)
+
+        foreach ($categories as $key => $category) {
+            $scores[$key] = isset($category['score']) 
+                ? round($category['score'] * 100) 
                 : 0;
-                
-            Log::debug("📊 Score $label", ['score' => $scores[$label]]);
-        }
-    
-        return $scores;
-    }
-
-    /**
-     * 🔥 CORRECTION : Méthode extractCategoryDetails améliorée
-     */
-    public function extractCategoryDetails(array $auditResult, string $categoryKey): array
-    {
-        $category = $auditResult['lighthouseResult']['categories'][$categoryKey] ?? null;
-
-        if (!$category) {
-            Log::debug("❌ Catégorie $categoryKey non trouvée");
-            return [
-                'score' => 0,
-                'title' => ucfirst($categoryKey),
-                'description' => null,
-                'manualDescription' => null,
-            ];
         }
 
-        $details = [
-            'score' => isset($category['score']) ? round($category['score'] * 100) : 0,
-            'title' => $category['title'] ?? ucfirst($categoryKey),
-            'description' => $category['description'] ?? null,
-            'manualDescription' => $category['manualDescription'] ?? null,
-        ];
-        
-        Log::debug("📊 Détails catégorie $categoryKey", [
-            'score' => $details['score'],
-            'title' => $details['title']
-        ]);
-
-        return $details;
-    }
-
-    /**
-     * 🔥 NOUVELLE MÉTHODE : Extraire tous les scores d'une seule fois
-     */
-    // REMPLACEZ votre méthode extractAllScores par :
-
-public function extractAllScores(array $auditResult): array
-{
-    if (!isset($auditResult['lighthouseResult']['categories'])) {
-        Log::warning('⚠️ Aucune catégorie trouvée dans extractAllScores');
         return [
-            'performance' => 0,
-            'accessibility' => 0,
-            'seo' => 0,
-            'best-practices' => 0
+            'performance' => $scores['performance'] ?? 0,
+            'accessibility' => $scores['accessibility'] ?? 0,
+            'seo' => $scores['seo'] ?? 0,
+            'best-practices' => $scores['best-practices'] ?? 0
         ];
     }
 
-    $categories = $auditResult['lighthouseResult']['categories'];
-    $scores = [];
-
-    foreach ($categories as $key => $category) {
-        $scores[$key] = isset($category['score']) 
-            ? round($category['score'] * 100) 
-            : 0;
-    }
-
-    // Mapping pour le frontend (si nécessaire)
-    $mappedScores = [
-        'performance' => $scores['performance'] ?? 0,
-        'accessibility' => $scores['accessibility'] ?? 0,
-        'seo' => $scores['seo'] ?? 0,
-        'best-practices' => $scores['best-practices'] ?? 0
-    ];
-
-    Log::debug('📊 Scores extraits', $mappedScores);
-
-    return $mappedScores;
-}
-
-
-
-
-    // REMPLACEZ votre méthode extractAuditFragments par celle-ci :
-
+    /**
+     * 🔥 EXTRACTION RAPIDE des audits critiques seulement
+     */
+    /**
+ * 🔥 EXTRACTION COMPLÈTE - PREND TOUT
+ */
 public function extractAuditFragments(array $audits): array
 {
     $fragments = [
         'opportunities' => [],
         'diagnostics' => [],
-        'informative' => []
+        'passed' => []
     ];
 
+    $processed = 0;
+    $excluded = 0;
+
     foreach ($audits as $auditId => $auditData) {
-        if (!isset($auditData['title']) || empty($auditData['title'])) {
+        // 🔥 DEBUG CHAQUE AUDIT
+        $hasScore = isset($auditData['score']);
+        $hasTitle = isset($auditData['title']);
+        $hasDescription = !empty($auditData['description'] ?? '');
+        
+        if (!$hasTitle || !$hasDescription) {
+            $excluded++;
             continue;
         }
 
         $fragment = [
+            'id' => $auditId,
             'title' => $auditData['title'],
-            'description' => $auditData['description'] ?? 'Description non disponible',
+            'description' => $auditData['description'] ?? '',
             'score' => $auditData['score'] ?? null,
             'displayValue' => $auditData['displayValue'] ?? null,
         ];
 
-        // Log pour débogage
-        Log::debug("📋 Traitement audit: {$auditData['title']}", [
-            'score' => $fragment['score'],
-            'displayValue' => $fragment['displayValue']
-        ]);
-
-        // Classification des audits
         if (isset($auditData['details']['overallSavingsMs'])) {
-            // Opportunités d'optimisation avec économie de temps
             $fragment['estimatedSavingsMs'] = $auditData['details']['overallSavingsMs'];
-            $fragments['opportunities'][] = $fragment;
-        } elseif ($auditData['scoreDisplayMode'] === 'informative' || 
-                 $auditData['scoreDisplayMode'] === 'manual' ||
-                 $auditData['score'] === null) {
-            // Audits informatifs (pas de score)
-            $fragments['informative'][] = $fragment;
-        } elseif (($auditData['score'] ?? 1) < 0.9) {
-            // Diagnostics (scores faibles)
-            $fragments['diagnostics'][] = $fragment;
-        } else {
-            // Scores bons, on les ignore ou on les met en informative
-            $fragments['informative'][] = $fragment;
         }
+
+        $score = $auditData['score'] ?? 1;
+        
+        if ($score < 0.9) {
+            if (isset($auditData['details']['overallSavingsMs'])) {
+                $fragments['opportunities'][] = $fragment;
+            } else {
+                $fragments['diagnostics'][] = $fragment;
+            }
+        } else {
+            $fragments['passed'][] = $fragment;
+        }
+        
+        $processed++;
     }
 
-    Log::info('📊 Audits classifiés', [
-        'opportunities_count' => count($fragments['opportunities']),
-        'diagnostics_count' => count($fragments['diagnostics']),
-        'informative_count' => count($fragments['informative'])
+    // 🔥 LOG DÉTAILLÉ
+    Log::info('🎯 EXTRACT AUDITS - DÉTAILS', [
+        'total_input' => count($audits),
+        'processed' => $processed,
+        'excluded' => $excluded,
+        'opportunities' => count($fragments['opportunities']),
+        'diagnostics' => count($fragments['diagnostics']),
+        'passed' => count($fragments['passed']),
+        'TOTAL_OUTPUT' => count($fragments['opportunities']) + 
+                         count($fragments['diagnostics']) + 
+                         count($fragments['passed'])
     ]);
 
     return $fragments;
@@ -461,9 +365,52 @@ public function extractAuditFragments(array $audits): array
 
 
 
+private function shouldIncludeAudit(string $auditId, array $auditData): bool
+{
+    // Exclure les audits techniques/informatifs
+    $excludedAudits = [
+        'metrics',
+        'screenshot-thumbnails',
+        'final-screenshot',
+        'network-requests',
+        'diagnostics',
+        'performance-budget',
+        'main-thread-tasks',
+        'long-tasks',
+        'user-timings',
+        'trace-elements',
+        'network-rtt',
+        'network-server-latency'
+    ];
 
+    // Inclure seulement les audits avec score et description
+    return !in_array($auditId, $excludedAudits) &&
+           isset($auditData['title']) &&
+           $auditData['title'] !== 'Metrics' &&
+           !empty($auditData['description'] ?? '');
+}
+    /**
+     * 🔥 SUPPRIMEZ ces méthodes inutiles pour gagner en performance :
+     * - mergeCategoryData() (plus utilisé)
+     * - getAuditValue()
+     * - formatNumericValue() 
+     * - extractScoresByCategory()
+     * - extractCategoryDetails()
+     */
 
-
-
-
+    /**
+     * 🔥 NETTOYAGE du cache
+     */
+    public function clearCache(string $url, ?string $strategy = null): void
+    {
+        if ($strategy) {
+            $cacheKey = "pagespeed_{$strategy}_" . md5($url);
+            Cache::forget($cacheKey);
+        } else {
+            foreach (['desktop', 'mobile'] as $s) {
+                $cacheKey = "pagespeed_{$s}_" . md5($url);
+                Cache::forget($cacheKey);
+            }
+        }
+    }
 }
