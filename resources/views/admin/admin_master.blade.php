@@ -27,7 +27,7 @@ body {
      margin: 0;
      padding: 0;
      font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-color: #8788c6;
     color: #1f2937 !important;
     
     display: flex;
@@ -47,7 +47,8 @@ nav {
 
 .glass-sidebar {
     min-height: 500px;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    
+    background-color: #1e293b;
     
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);

@@ -2,726 +2,11 @@
 
 @section('admin')
 <div class="container mt-5">
-    <div class="glass-card p-4 mb-5 text-dark">
 
-        <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-            <h2 class="mb-3 fw-bold" style="color:#2e4db6;">🗂️ Project: {{ $project->name }}</h2>
-        </div>
 
-        <p>
-            <strong>
-                <i class="bi bi-link-45deg text-info me-1"></i>URL:
-            </strong>
-            {{ $project->base_url }}
-        </p>
 
-        @if($analysis)
-            <hr class="my-4">
-
-            {{-- Tabs navigation --}}
-            <ul class="nav nav-tabs mb-3" id="analysisTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab">
-                        <i class="bi bi-bar-chart-line-fill text-success me-1"></i>SEO Analysis
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="headings-tab" data-bs-toggle="tab" data-bs-target="#headings" type="button" role="tab">
-                        <i class="bi bi-type-h1 text-warning me-1"></i>Headings
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#images" type="button" role="tab">
-                        <i class="bi bi-image text-secondary me-1"></i>Images
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="keywords-tab" data-bs-toggle="tab" data-bs-target="#keywords" type="button" role="tab">
-                        <i class="bi bi-search text-primary me-1"></i>Keywords
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">
-                        <i class="bi bi-tools text-danger me-1"></i>Technical Audit
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="audit-structure-tab" data-bs-toggle="tab" href="#audit-structure" role="tab" aria-controls="audit-structure" aria-selected="false">
-                        🗂️ Structural Audit
-                    </a>
-                </li>
-            </ul>
-
-            {{-- Tabs content --}}
-            <div class="tab-content" id="analysisTabsContent">
-
-                {{-- SEO Analysis --}}
-                <div class="tab-pane fade show active" id="seo" role="tabpanel">
-                    <ul class="list-group list-group-flush mb-4">
-                        <li class="list-group-item bg-transparent text-dark">
-                            <strong>Title:</strong> {{ $analysis->page_title }}
-                        </li>
-                        <li class="list-group-item bg-transparent text-dark">
-                            <strong>Meta Description:</strong> {{ $analysis->meta_description }}
-                        </li>
-                        <li class="list-group-item bg-transparent text-dark">
-                            <strong>Word Count:</strong> {{ $analysis->word_count }}
-                        </li>
-                        <li class="list-group-item bg-transparent text-dark">
-                            <strong>Keyword Density:</strong> {{ $analysis->keyword_density }}%
-                        </li>
-                        <li class="list-group-item bg-transparent text-dark">
-                            <strong>Mobile Friendly:</strong> {{ $analysis->mobile_friendly ? '✅ Yes' : '❌ No' }}
-                        </li>
-                        @php
-                            $score = $analysis->seo_score;
-                            $color = 'text-muted';
-                            if ($score >= 80) {
-                                $color = 'text-success';
-                            } elseif ($score >= 50) {
-                                $color = 'text-warning';
-                            } else {
-                                $color = 'text-danger';
-                            }
-                        @endphp
-                        <li class="list-group-item bg-transparent text-dark">
-                            <strong>📊 SEO Score:</strong>
-                            <span class="{{ $color }}">{{ $score }}/100</span>
-                        </li>
-                    </ul>
-                </div>
-
-                {{-- Headings --}}
-                <div class="tab-pane fade" id="headings" role="tabpanel">
-                    @if(!empty($analysis->headings) && is_array($analysis->headings))
-                        <ul class="list-group list-group-flush mb-4">
-                            @foreach($analysis->headings as $heading)
-                                @if(is_array($heading))
-                                    <li class="list-group-item bg-transparent text-dark">
-                                        <span class="badge bg-primary me-2">{{ $heading['tag'] ?? 'N/A' }}</span>
-                                        {{ $heading['text'] ?? 'Texte non disponible' }}
-                                    </li>
-                                @else
-                                    <li class="list-group-item bg-transparent text-dark">{{ $heading }}</li>
-                                @endif
-                            @endforeach
-                        </ul>
-                    @else
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Aucun heading trouvé sur cette page.
-                        </div>
-                    @endif
-                </div>
-
-                {{-- Images --}}
-                <div class="tab-pane fade" id="images" role="tabpanel">
-                    @if(!empty($analysis->images_data) && is_array($analysis->images_data))
-                        <ul class="list-group list-group-flush mb-4">
-                            @foreach($analysis->images_data as $img)
-                                @if(is_array($img))
-                                    <li class="list-group-item bg-transparent text-dark truncate-filename">
-                                        <strong>Source:</strong> {{ $img['src'] ?? 'N/A' }}<br>
-                                        <strong>Alt:</strong> {{ $img['alt'] ?? 'Aucun texte alternatif' }}
-                                    </li>
-                                @else
-                                    <li class="list-group-item bg-transparent text-dark truncate-filename">{{ $img }}</li>
-                                @endif
-                            @endforeach
-                        </ul>
-                    @else
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Aucune image trouvée sur cette page.
-                        </div>
-                    @endif
-                </div>
-
-                {{-- Keywords --}}
-                <div class="tab-pane fade" id="keywords" role="tabpanel">
-                    @if(!empty($analysis->keywords) && is_array($analysis->keywords) && count($analysis->keywords) > 0)
-                        <ul class="list-group list-group-flush mb-4">
-                            @foreach($analysis->keywords as $word => $count)
-                                <li class="list-group-item bg-transparent text-dark">
-                                    <strong>{{ $word }}</strong> — {{ $count }} occurrence{{ $count > 1 ? 's' : '' }}
-                                </li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <div class="alert alert-info mt-3">
-                            <i class="bi bi-info-circle-fill me-2"></i>Aucun mot-clé détecté pour cette analyse.
-                        </div>
-                    @endif
-                </div>
-
-                {{-- Technical Audit --}}
-                <div class="tab-pane fade" id="audit" role="tabpanel">
-                    @php
-                        $audit = $analysis->technical_audit ?? [];
-                        $isAuditAvailable = is_array($audit) && !empty($audit);
-                    @endphp
-                    @if($isAuditAvailable)
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>📄 Title Tag:</strong>
-                                <span class="{{ $audit['has_title'] ?? false ? 'text-success' : 'text-danger' }}">
-                                    {{ $audit['has_title'] ?? false ? '✅ Présent' : '❌ Manquant' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>📝 Meta Description:</strong>
-                                <span class="{{ $audit['has_meta_description'] ?? false ? 'text-success' : 'text-danger' }}">
-                                    {{ $audit['has_meta_description'] ?? false ? '✅ Présente' : '❌ Manquante' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🏷️ H1 Tags:</strong>
-                                <span class="{{ ($audit['has_h1'] ?? false) ? 'text-success' : 'text-danger' }}">
-                                    @if($audit['has_h1'] ?? false)
-                                        ✅ Présent ({{ $audit['h1_count'] ?? 1 }})
-                                    @else
-                                        ❌ Manquant
-                                    @endif
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>📱 Viewport Meta:</strong>
-                                <span class="{{ $audit['has_viewport'] ?? false ? 'text-success' : 'text-warning' }}">
-                                    {{ $audit['has_viewport'] ?? false ? '✅ Présent' : '⚠️ Manquant' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🔗 Canonical URL:</strong>
-                                <span class="{{ $audit['has_canonical'] ?? false ? 'text-success' : 'text-info' }}">
-                                    {{ $audit['has_canonical'] ?? false ? '✅ Présente' : 'ℹ️ Manquante' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🤖 Robots Meta:</strong>
-                                <span class="{{ $audit['has_robots'] ?? false ? 'text-success' : 'text-info' }}">
-                                    {{ $audit['has_robots'] ?? false ? '✅ Présente' : 'ℹ️ Manquante' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🖼️ Images sans alt:</strong>
-                                <span class="{{ ($audit['images_with_missing_alt'] ?? 0) == 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ $audit['images_with_missing_alt'] ?? 0 }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🔗 Liens internes:</strong>
-                                <span class="text-primary">
-                                    {{ $audit['internal_links'] ?? 0 }}
-                                </span>
-                            </li>
-                            @if(isset($audit['has_sitemap']))
-                                <li class="list-group-item bg-transparent text-dark">
-                                    <strong>🗺️ Sitemap détecté:</strong>
-                                    <span class="{{ $audit['has_sitemap'] ? 'text-success' : 'text-info' }}">
-                                        {{ $audit['has_sitemap'] ? '✅ Oui' : 'ℹ️ Non' }}
-                                    </span>
-                                </li>
-                            @endif
-                            @if(isset($audit['has_schema_org']))
-                                <li class="list-group-item bg-transparent text-dark">
-                                    <strong>🏷️ Schema.org:</strong>
-                                    <span class="{{ $audit['has_schema_org'] ? 'text-success' : 'text-info' }}">
-                                        {{ $audit['has_schema_org'] ? '✅ Présent' : 'ℹ️ Absent' }}
-                                    </span>
-                                </li>
-                            @endif
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🔐 HTTPS activé:</strong>
-                                <span class="{{ $analysis->https_enabled ? 'text-success' : 'text-danger' }}">
-                                    {{ $analysis->https_enabled ? '✅ Oui' : '❌ Non' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>📊 Données structurées:</strong>
-                                <span class="{{ $analysis->has_structured_data ? 'text-success' : 'text-info' }}">
-                                    {{ $analysis->has_structured_data ? '✅ Présentes' : 'ℹ️ Absentes' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🚫 Noindex détecté:</strong>
-                                <span class="{{ $analysis->noindex_detected ? 'text-warning' : 'text-success' }}">
-                                    {{ $analysis->noindex_detected ? '⚠️ Oui' : '✅ Non' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>⚡ Temps de chargement:</strong>
-                                @php
-                                    $loadTime = $analysis->load_time;
-                                    $loadTimeColor = 'text-muted';
-                                    $loadTimeLabel = 'Non mesuré';
-                                    if ($loadTime && $loadTime > 0) {
-                                        $loadTimeLabel = number_format($loadTime, 2) . 's';
-                                        if ($loadTime < 1) {
-                                            $loadTimeColor = 'text-success';
-                                        } elseif ($loadTime < 3) {
-                                            $loadTimeColor = 'text-warning';
-                                        } else {
-                                            $loadTimeColor = 'text-danger';
-                                        }
-                                    }
-                                @endphp
-                                <span class="{{ $loadTimeColor }}">{{ $loadTimeLabel }}</span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>📄 Taille HTML:</strong>
-                                @php
-                                    $htmlSize = $analysis->html_size;
-                                    $htmlColor = 'text-muted';
-                                    $htmlLabel = 'N/A';
-                                    if ($htmlSize) {
-                                        $htmlLabel = $htmlSize < 1000 ? $htmlSize . ' bytes' : round($htmlSize / 1024, 1) . ' KB';
-                                        if ($htmlSize < 50000) {
-                                            $htmlColor = 'text-success';
-                                        } elseif ($htmlSize < 150000) {
-                                            $htmlColor = 'text-warning';
-                                        } else {
-                                            $htmlColor = 'text-danger';
-                                        }
-                                    }
-                                @endphp
-                                <span class="{{ $htmlColor }}">{{ $htmlLabel }}</span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🔗 Liens totaux:</strong>
-                                @php
-                                    $totalLinks = $analysis->total_links;
-                                    $linksColor = 'text-muted';
-                                    $linksLabel = 'N/A';
-                                    if ($totalLinks !== null) {
-                                        $linksLabel = $totalLinks . ' liens';
-                                        if ($totalLinks < 10) {
-                                            $linksColor = 'text-warning';
-                                        } elseif ($totalLinks < 100) {
-                                            $linksColor = 'text-success';
-                                        } else {
-                                            $linksColor = 'text-info';
-                                        }
-                                    }
-                                @endphp
-                                <span class="{{ $linksColor }}">{{ $linksLabel }}</span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>📣 Balises Open Graph:</strong>
-                                <span class="{{ $analysis->has_og_tags ? 'text-success' : 'text-info' }}">
-                                    {{ $analysis->has_og_tags ? '✅ Présentes' : 'ℹ️ Absentes' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🌍 Langue du document:</strong>
-                                <span class="text-primary">
-                                    {{ $analysis->html_lang ? strtoupper($analysis->html_lang) : 'Non spécifiée' }}
-                                </span>
-                            </li>
-                            <li class="list-group-item bg-transparent text-dark">
-                                <strong>🖼️ Favicon détecté:</strong>
-                                <span class="{{ $analysis->has_favicon ? 'text-success' : 'text-info' }}">
-                                    {{ $analysis->has_favicon ? '✅ Oui' : 'ℹ️ Non' }}
-                                </span>
-                            </li>
-                        </ul>
-                    @else
-                        <div class="alert alert-warning mt-3">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            Audit technique non disponible pour cette analyse.
-                            @if(app()->environment('local'))
-                                <div class="mt-2 small text-muted">
-                                    <strong>Debug:</strong>
-                                    technical_audit = {{ json_encode($analysis->technical_audit) }}
-                                </div>
-                            @endif
-                        </div>
-                    @endif
-                </div>
-
-                {{-- Structural Audit --}}
-
-                {{-- Structural Audit --}}
-<div class="tab-pane fade" id="audit-structure" role="tabpanel" aria-labelledby="audit-structure-tab">
-    <h5 class="mt-3">Structure of Hn tags</h5>
-    
-    @php
-        // Utiliser directement $analysis->headings qui contient les données
-        $headingsData = $analysis->headings ?? [];
-        
-        // Si c'est un JSON string, le décoder
-        if (is_string($headingsData)) {
-            $headingsData = json_decode($headingsData, true);
-        }
-        
-        $headings = is_array($headingsData) ? $headingsData : [];
-        $total = count($headings);
-        
-        // Compter les balises par type
-        $h1Count = 0;
-        $h2Count = 0;
-        $h3Count = 0;
-        $h4PlusCount = 0;
-        $hasH1 = false;
-        
-        $validHeadings = [];
-        
-        // Calculer la profondeur DOM approximative basée sur la position
-        foreach ($headings as $index => $h) {
-            if (is_array($h)) {
-                $tag = strtolower($h['tag'] ?? '');
-                $text = $h['text'] ?? 'N/A';
-                
-                // Déterminer le niveau
-                $level = 0;
-                switch($tag) {
-                    case 'h1': 
-                        $level = 1;
-                        $h1Count++;
-                        $hasH1 = true;
-                        break;
-                    case 'h2': 
-                        $level = 2;
-                        $h2Count++; 
-                        break;
-                    case 'h3': 
-                        $level = 3;
-                        $h3Count++; 
-                        break;
-                    case 'h4': 
-                        $level = 4;
-                        $h4PlusCount++; 
-                        break;
-                    case 'h5': 
-                        $level = 5;
-                        $h4PlusCount++; 
-                        break;
-                    case 'h6': 
-                        $level = 6;
-                        $h4PlusCount++; 
-                        break;
-                    default: 
-                        $level = 0;
-                }
-                
-                // Calculer la profondeur DOM approximative
-                // Basée sur la complexité du texte et la position
-                $baseDepth = 0;
-                
-                // Profondeur de base selon le niveau
-                $baseDepth = match($level) {
-                    1 => rand(8, 15),   // H1 généralement plus profond
-                    2 => rand(5, 12),   // H2 
-                    3 => rand(3, 8),    // H3
-                    4 => rand(2, 6),    // H4
-                    default => rand(1, 4) // Autres
-                };
-                
-                // Ajuster selon la longueur du texte (textes longs souvent plus profonds)
-                $textLength = strlen($text);
-                if ($textLength > 100) {
-                    $baseDepth += 2;
-                } elseif ($textLength > 50) {
-                    $baseDepth += 1;
-                }
-                
-                // Ajuster selon la position (les premiers headings souvent plus profonds)
-                if ($index < 3) {
-                    $baseDepth += 2;
-                } elseif ($index < 6) {
-                    $baseDepth += 1;
-                }
-                
-                // Assurer une valeur réaliste
-                $domDepth = max(1, min(25, $baseDepth));
-                
-                $validHeadings[] = [
-                    'tag' => $tag,
-                    'text' => $text,
-                    'level' => $level,
-                    'dom_depth' => $domDepth,
-                    'length' => $textLength
-                ];
-            }
-        }
-        
-        // Trier par profondeur DOM (optionnel)
-        usort($validHeadings, function($a, $b) {
-            return $b['dom_depth'] - $a['dom_depth'];
-        });
-        
-        // Statistiques de profondeur
-        $avgDepth = $total > 0 ? round(array_sum(array_column($validHeadings, 'dom_depth')) / $total, 1) : 0;
-        $maxDepth = $total > 0 ? max(array_column($validHeadings, 'dom_depth')) : 0;
-        $minDepth = $total > 0 ? min(array_column($validHeadings, 'dom_depth')) : 0;
-    @endphp
-
-    @if($total > 0)
-        {{-- Afficher les résultats --}}
-        @if(!$hasH1)
-            <div class="alert alert-danger">
-                ⚠️ No &lt;h1&gt; detected — the semantic structure is incomplete.
-            </div>
-        @elseif($h1Count > 1)
-            <div class="alert alert-warning">
-                ⚠️ Multiple &lt;h1&gt; tags detected ({{ $h1Count }}) — only one H1 should be used per page.
-            </div>
-        @endif
-        
-        {{-- Résumé avec statistiques de profondeur --}}
-        <div class="alert alert-secondary">
-            <div class="row text-center">
-                <div class="col-md-2">
-                    <strong>H1:</strong> {{ $h1Count }}
-                </div>
-                <div class="col-md-2">
-                    <strong>H2:</strong> {{ $h2Count }}
-                </div>
-                <div class="col-md-2">
-                    <strong>H3:</strong> {{ $h3Count }}
-                </div>
-                <div class="col-md-2">
-                    <strong>H4+:</strong> {{ $h4PlusCount }}
-                </div>
-                <div class="col-md-2">
-                    <strong>Total:</strong> {{ $total }}
-                </div>
-            </div>
-            <div class="row text-center mt-2">
-                <div class="col-md-4">
-                    <strong>Avg Depth:</strong> {{ $avgDepth }}
-                </div>
-                <div class="col-md-4">
-                    <strong>Max Depth:</strong> {{ $maxDepth }}
-                </div>
-                <div class="col-md-4">
-                    <strong>Min Depth:</strong> {{ $minDepth }}
-                </div>
-            </div>
-        </div>
-        
-        {{-- Tableau des headings --}}
-        <table class="table table-bordered table-sm mt-2">
-            <thead class="table-dark">
-                <tr>
-                    <th>Tag</th>
-                    <th>DOM Depth</th>
-                    <th>Text</th>
-                    <th>Length</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($validHeadings as $heading)
-                    @php
-                        $tag = $heading['tag'] ?? '';
-                        $text = $heading['text'] ?? 'N/A';
-                        $level = $heading['level'] ?? 0;
-                        $domDepth = $heading['dom_depth'] ?? 0;
-                        $length = $heading['length'] ?? 0;
-                        
-                        // Classes de couleur selon la profondeur
-                        $depthClass = match(true) {
-                            $domDepth <= 5 => 'text-success',
-                            $domDepth <= 10 => 'text-info',
-                            $domDepth <= 15 => 'text-warning',
-                            default => 'text-danger'
-                        };
-                        
-                        // Badge color selon le niveau
-                        $badgeClass = match($level) {
-                            1 => 'bg-success',
-                            2 => 'bg-info',
-                            3 => 'bg-warning',
-                            4 => 'bg-secondary',
-                            5 => 'bg-dark',
-                            6 => 'bg-dark',
-                            default => 'bg-light text-dark'
-                        };
-                    @endphp
-                    <tr>
-                        <td>
-                            <span class="badge {{ $badgeClass }}">
-                                {{ strtoupper($tag) }}
-                            </span>
-                        </td>
-                        <td class="{{ $depthClass }}">
-                            <strong>{{ $domDepth }}</strong>
-                            <div class="progress mt-1" style="height: 4px;">
-                                <div class="progress-bar 
-                                    @if($domDepth <= 5) bg-success
-                                    @elseif($domDepth <= 10) bg-info
-                                    @elseif($domDepth <= 15) bg-warning
-                                    @else bg-danger
-                                    @endif" 
-                                    style="width: {{ min(100, ($domDepth / 25) * 100) }}%">
-                                </div>
-                            </div>
-                        </td>
-                        <td title="{{ $text }}">
-                            {{ Str::limit($text, 70) }}
-                        </td>
-                        <td>{{ $length }} chars</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        {{-- Structure hiérarchique visuelle --}}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">📊 Hierarchical Structure Visualization</h6>
-            </div>
-            <div class="card-body">
-                <div class="headings-hierarchy">
-                    @foreach($validHeadings as $heading)
-                        @php
-                            $tag = $heading['tag'] ?? '';
-                            $text = $heading['text'] ?? 'N/A';
-                            $level = $heading['level'] ?? 0;
-                            $domDepth = $heading['dom_depth'] ?? 0;
-                        @endphp
-                        @if($level > 0)
-                            <div class="heading-level heading-level-{{ $level }} mb-2 ps-{{ ($level - 1) * 3 }}">
-                                <span class="badge bg-primary me-2">H{{ $level }}</span>
-                                <small class="text-muted me-2">Depth: {{ $domDepth }}</small>
-                                <span class="heading-text">{{ Str::limit($text, 50) }}</span>
-                                <small class="text-muted ms-2">({{ $heading['length'] ?? 0 }} chars)</small>
-                            </div>
-                        @endif
-                    @endforeach
-                </div>
-            </div>
-        </div>
-
-        {{-- Analyse SEO --}}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">🔍 SEO Analysis</h6>
-            </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    <li>
-                        @if($h1Count === 1)
-                            ✅ <strong>H1:</strong> Perfect! Only one H1 tag found.
-                        @elseif($h1Count === 0)
-                            ❌ <strong>H1:</strong> No H1 tag found - this hurts SEO.
-                        @else
-                            ⚠️ <strong>H1:</strong> {{ $h1Count }} H1 tags found - should only have one.
-                        @endif
-                    </li>
-                    <li>
-                        @if($h2Count > 0)
-                            ✅ <strong>H2:</strong> {{ $h2Count }} H2 tags found - good for structure.
-                        @else
-                            ℹ️ <strong>H2:</strong> No H2 tags found.
-                        @endif
-                    </li>
-                    <li>
-                        @if($h3Count > 0)
-                            ✅ <strong>H3:</strong> {{ $h3Count }} H3 tags found - good hierarchy.
-                        @else
-                            ℹ️ <strong>H3:</strong> No H3 tags found.
-                        @endif
-                    </li>
-                    <li>
-                        <strong>Structure Quality:</strong> 
-                        @if($h1Count === 1 && $h2Count >= 2 && $total <= 15)
-                            🟢 Excellent
-                        @elseif($h1Count === 1 && $total <= 20)
-                            🟡 Good
-                        @else
-                            🔴 Needs improvement
-                        @endif
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        {{-- Analyse de profondeur DOM --}}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">📏 DOM Depth Analysis</h6>
-            </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    <li>
-                        @if($avgDepth <= 8)
-                            ✅ <strong>Average Depth:</strong> {{ $avgDepth }} - Good, reasonable nesting
-                        @elseif($avgDepth <= 12)
-                            ⚠️ <strong>Average Depth:</strong> {{ $avgDepth }} - Moderate, could be optimized
-                        @else
-                            ❌ <strong>Average Depth:</strong> {{ $avgDepth }} - High, consider simplifying HTML structure
-                        @endif
-                    </li>
-                    <li>
-                        @if($maxDepth <= 15)
-                            ✅ <strong>Max Depth:</strong> {{ $maxDepth }} - Acceptable maximum nesting
-                        @else
-                            ⚠️ <strong>Max Depth:</strong> {{ $maxDepth }} - Very deep nesting, may impact performance
-                        @endif
-                    </li>
-                    <li>
-                        <strong>Recommendation:</strong> 
-                        @if($avgDepth <= 8 && $maxDepth <= 12)
-                            🟢 Excellent DOM structure
-                        @elseif($avgDepth <= 10 && $maxDepth <= 15)
-                            🟡 Good, minor optimizations possible
-                        @else
-                            🔴 Consider simplifying HTML structure
-                        @endif
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <style>
-        .heading-level {
-            border-left: 3px solid #dee2e6;
-            padding-left: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .heading-level:hover {
-            background-color: #f8f9fa;
-            border-left-color: #007bff;
-        }
-
-        .heading-level-1 { border-left-color: #28a745; }
-        .heading-level-2 { border-left-color: #17a2b8; }
-        .heading-level-3 { border-left-color: #ffc107; }
-        .heading-level-4 { border-left-color: #6c757d; }
-        .heading-level-5 { border-left-color: #adb5bd; }
-        .heading-level-6 { border-left-color: #e9ecef; }
-
-        .heading-text {
-            font-weight: 500;
-        }
-        </style>
-
-    @else
-        {{-- Aucune donnée --}}
-        <div class="alert alert-warning">
-            <h6>❌ No Hn tags detected</h6>
-            <p class="mb-0">
-                No heading tags (H1-H6) were found on this page. 
-                This can negatively impact SEO.
-            </p>
-        </div>
-    @endif
-</div>
-            </div>
-        @else
-            <p class="text-muted">No analysis available for this project yet.</p>
-        @endif
-    </div>
-
-    @if($analysis && ($analysis->cloudflare_blocked || empty($analysis->main_content)))
-        <div class="alert alert-warning">
-            ⚠️ The main content could not be extracted.
-            @if($analysis->cloudflare_blocked)
-                It seems that the website is protected by <strong>Cloudflare</strong>.
-            @else
-                No useful information was found on this page.
-            @endif
-        </div>
-    @endif
+<!-- Composant SEO Analysis -->
+    <x-seo-analysis-card :project="$project" :analysis="$analysis" />
 
     @if($analysis)
         <div class="glass-card mt-5 pt-4" style="border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); padding: 2rem; border: 1px solid rgba(255, 255, 255, 0.3);">
@@ -914,7 +199,7 @@
             </div>
         </div>
 
-        <div class="glass-card mt-5 p-4" style="background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; word-wrap: break-word; overflow-wrap: break-word;">
+        <div class="glass-card mt-5 p-4 mb-4" style="background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; word-wrap: break-word; overflow-wrap: break-word;">
             <div class="d-flex align-items-center mb-3">
                 <img src="https://www.google.com/s2/favicons?domain={{ parse_url($analysis->page_url ?? '', PHP_URL_HOST) }}"
                      alt="favicon"
@@ -939,50 +224,571 @@
 
 
         {{-- Section PageRank avec rafraîchissement automatique --}}
-
-        <div data-pagerank-section> {{-- ⬅️ AJOUTEZ CET ATTRIBUT --}}
-        @if(!is_null($analysis->page_rank))
-        {{-- Afficher le vrai PageRank --}}
         @php
-            $rank = round($analysis->page_rank, 2);
-            $color = $rank >= 6 ? '#00ff99' : ($rank >= 3 ? '#ffcc00' : '#ff4d4d');
-            $emoji = $rank >= 6 ? '🟢' : ($rank >= 3 ? '🟠' : '🔴');
-        @endphp
-        <div class="glass-card mt-4 p-4">
-            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-                <h5 class="fw-bold mb-0" style="color:#2e4db6;">🔗 Domain PageRank</h5>
+    $rank = !is_null($analysis->page_rank) ? round($analysis->page_rank, 2) : null;
+    $globalRank = $analysis->page_rank_global ?? null;
+    
+    // Déterminer le niveau et les couleurs
+    if (!is_null($rank)) {
+        if ($rank >= 7) {
+            $color = '#10b981';
+            $gradient = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            $icon = 'bi-trophy-fill';
+            $level = 'Excellent';
+            $bgColor = 'rgba(16, 185, 129, 0.1)';
+        } elseif ($rank >= 4) {
+            $color = '#f59e0b';
+            $gradient = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            $icon = 'bi-graph-up-arrow';
+            $level = 'Moyen';
+            $bgColor = 'rgba(245, 158, 11, 0.1)';
+        } else {
+            $color = '#ef4444';
+            $gradient = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            $icon = 'bi-exclamation-triangle-fill';
+            $level = 'Faible';
+            $bgColor = 'rgba(239, 68, 68, 0.1)';
+        }
+    }
+@endphp
+
+<div data-pagerank-section>
+    @if(!is_null($rank))
+        <div class="pagerank-card mb-4">
+            <!-- Header avec icône et titre -->
+            <div class="pagerank-header" style="background: {{ $gradient }};">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="bi bi-bar-chart-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="pagerank-title">Domain PageRank</h3>
+                        <p class="pagerank-subtitle">Authority score based on OpenPageRank</p>
+                    </div>
+                </div>
+                <div class="domain-score" style="background: rgba(255, 255, 255, 0.2); color: white;">
+                    {{ $rank }}/10
+                </div>
             </div>
-            <div class="flex items-center space-x-3 text-xl font-bold">
-                <span style="color: {{ $color }};">{{ $emoji }} {{ $rank }} / 10</span>
-                <span class="text-sm text-muted" style="font-size: 0.85rem;">
-                    (according to OpenPageRank)
-                </span>
+
+            <!-- Contenu principal -->
+            <div class="pagerank-content">
+                <!-- Score et indicateur visuel -->
+                <div class="score-section">
+                    <div class="score-display">
+                        <div class="score-circle">
+                            <div class="circle-progress" style="--progress: {{ $rank * 10 }}%; --color: {{ $color }};">
+                                <div class="score-number">{{ $rank }}</div>
+                                <div class="score-label">/10</div>
+                            </div>
+                        </div>
+                        <div class="score-details">
+                            <div class="score-level" style="color: {{ $color }};">
+                                <i class="bi {{ $icon }} me-2"></i>
+                                {{ $level }}
+                            </div>
+                            @if(!is_null($globalRank))
+                                <div class="global-rank">
+                                    <div class="rank-label">Global Ranking</div>
+                                    <div class="rank-value">#{{ number_format($globalRank) }}</div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barre de progression détaillée -->
+                <div class="progress-section">
+                    <div class="progress-labels">
+                        <span>0</span>
+                        <span>5</span>
+                        <span>10</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: {{ $rank * 10 }}%; background: {{ $gradient }};"></div>
+                        </div>
+                        <div class="progress-indicator" style="left: {{ $rank * 10 }}%; background: {{ $color }};">
+                            <div class="indicator-tooltip">{{ $rank }}</div>
+                        </div>
+                    </div>
+                    <div class="progress-levels">
+                        <div class="level-item">
+                            <div class="level-dot" style="background: #ef4444;"></div>
+                            <span>Faible</span>
+                        </div>
+                        <div class="level-item">
+                            <div class="level-dot" style="background: #f59e0b;"></div>
+                            <span>Moyen</span>
+                        </div>
+                        <div class="level-item">
+                            <div class="level-dot" style="background: #10b981;"></div>
+                            <span>Excellent</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations contextuelles -->
+                <div class="info-section">
+                    <div class="section-header">
+                        <i class="bi bi-info-circle"></i>
+                        <h4>About PageRank</h4>
+                    </div>
+                    <p class="info-text">
+                        This score reflects the domain's public reputation on the global web, calculated from open source data. 
+                        Higher scores indicate greater authority and trustworthiness.
+                    </p>
+                    <div class="info-footer">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Data provided by OpenPageRank Initiative</span>
+                    </div>
+                </div>
             </div>
-            @if(!is_null($analysis->page_rank_global))
-                <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
-                    Overall ranking : <strong>#{{ number_format($analysis->page_rank_global) }}</strong>
-                </p>
-            @endif
-            <p class="mt-2 text-muted" style="font-size: 0.85rem;">
-                This score reflects the domain's public reputation on the global web, calculated from open source data.
-            </p>
+
+            <!-- Footer avec timestamp -->
+            <div class="pagerank-footer">
+                <div class="last-updated">
+                    <i class="bi bi-clock-history"></i>
+                    Last updated {{ now()->format('M d, Y \a\t H:i') }}
+                </div>
+            </div>
         </div>
     @else
-        {{-- Placeholder en attendant --}}
-        <div class="glass-card mt-4 p-4">
-            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-                <h5 class="fw-bold mb-0" style="color:#2e4db6;">🔗 Domain PageRank</h5>
-            </div>
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading...</span>
+        <!-- État de chargement -->
+        <div class="pagerank-card mb-4">
+            <div class="pagerank-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="bi bi-bar-chart-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="pagerank-title">Domain PageRank</h3>
+                        <p class="pagerank-subtitle">Calculating authority score</p>
+                    </div>
                 </div>
-                <p class="text-muted">Calculating PageRank...</p>
-                <small class="text-info">This may take a few moments</small>
+                <div class="domain-score" style="background: rgba(255, 255, 255, 0.2); color: white;">
+                    ...
+                </div>
+            </div>
+
+            <div class="pagerank-content">
+                <div class="loading-state">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="loading-content">
+                        <h4>Analyzing Domain Authority</h4>
+                        <p>We're calculating the PageRank score based on global web data. This may take a few moments.</p>
+                        <div class="progress mt-3" style="height: 6px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 65%"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     @endif
-    </div>
+</div>
+
+<style>
+.pagerank-card {
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.08),
+        0 2px 10px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.pagerank-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.12),
+        0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.pagerank-header {
+    color: white;
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    overflow: hidden;
+}
+
+.pagerank-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.pagerank-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.pagerank-subtitle {
+    opacity: 0.9;
+    font-size: 0.9rem;
+    margin: 0.25rem 0 0 0;
+}
+
+.domain-score {
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    backdrop-filter: blur(10px);
+}
+
+.pagerank-content {
+    padding: 2rem;
+}
+
+.score-section {
+    margin-bottom: 2rem;
+}
+
+.score-display {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.score-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.circle-progress {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--color) calc(var(--progress) * 1%),
+        #f1f5f9 0%
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.circle-progress::before {
+    content: '';
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    background: white;
+    border-radius: 50%;
+}
+
+.score-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1f2937;
+    position: relative;
+    z-index: 1;
+}
+
+.score-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    position: relative;
+    z-index: 1;
+}
+
+.score-details {
+    flex: 1;
+}
+
+.score-level {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.global-rank {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.rank-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.rank-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1f2937;
+}
+
+.progress-section {
+    margin-bottom: 2rem;
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.progress-bar-container {
+    position: relative;
+    height: 12px;
+    margin-bottom: 1rem;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 100%;
+    background: #f1f5f9;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 1s ease-in-out;
+}
+
+.progress-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.indicator-tooltip {
+    position: absolute;
+    top: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.indicator-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #1f2937;
+}
+
+.progress-levels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.level-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.level-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.info-section {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.section-header i {
+    font-size: 1.25rem;
+    color: #667eea;
+}
+
+.section-header h4 {
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.info-text {
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.info-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.info-footer i {
+    color: #667eea;
+}
+
+.pagerank-footer {
+    background: #f8fafc;
+    padding: 1rem 2rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.last-updated {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #718096;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.last-updated i {
+    font-size: 0.8rem;
+}
+
+.loading-state {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem 0;
+}
+
+.loading-spinner {
+    flex-shrink: 0;
+}
+
+.loading-content {
+    flex: 1;
+}
+
+.loading-content h4 {
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.loading-content p {
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .pagerank-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .score-display {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .loading-state {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .pagerank-content {
+        padding: 1.5rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pagerank-card {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.score-section {
+    animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.progress-section {
+    animation: fadeIn 0.6s ease-out 0.3s both;
+}
+
+.info-section {
+    animation: fadeIn 0.6s ease-out 0.4s both;
+}
+</style>
         <x-whois-card :analysis="$analysis" />
         <x-analysis-summary :analysis="$analysis" />
 
@@ -1081,15 +887,84 @@
             }
         };
 
-        // 🔍 SURVEILLANCE AUTOMATIQUE
+        // 🔍 SURVEILLANCE AUTOMATIQUE UNIFIÉE
         function startWatching() {
             if (isWatching) return;
             isWatching = true;
             console.log('🔍 Surveillance automatique activée');
-            checkPageSpeedStatus();
+            
+            let checkCount = 0;
+            const maxChecks = 60; // 5 minutes max (60 * 5s)
+            
             watchInterval = setInterval(() => {
-                checkPageSpeedStatus();
-            }, 5000);
+                checkAllStatus();
+                checkCount++;
+                
+                if (checkCount >= maxChecks) {
+                    console.log('⏹️ Surveillance arrêtée (timeout)');
+                    stopWatching();
+                }
+            }, 5000); // Vérifier toutes les 5 secondes
+            
+            // Vérifier immédiatement
+            checkAllStatus();
+        }
+
+        function checkAllStatus() {
+            fetch(`/seo-analysis/${analysisId}/status`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Statut HTTP invalide');
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📊 Statut complet:', data);
+                    
+                    let everythingReady = true;
+                    
+                    // ✅ Vérifier PageSpeed Desktop
+                    const desktopReady = data.desktop_ready && data.desktop_score !== null;
+                    const mobileReady = data.mobile_ready && data.mobile_score !== null;
+                    
+                    if (desktopReady && !window.desktopDisplayed) {
+                        console.log('✅ Données Desktop prêtes !');
+                        window.desktopDisplayed = true;
+                        showNotification('✅ Données Desktop disponibles', 'success');
+                        if (currentStrategy === 'desktop') {
+                            fetchPageSpeed('desktop', false, true);
+                        }
+                    }
+                    
+                    if (mobileReady && !window.mobileDisplayed) {
+                        console.log('✅ Données Mobile prêtes !');
+                        window.mobileDisplayed = true;
+                        showNotification('✅ Données Mobile disponibles', 'success');
+                    }
+                    
+                    // 🆕 Vérifier PageRank - CORRIGÉ
+                    if (data.page_rank !== null && data.page_rank !== undefined && !window.pageRankDisplayed) {
+                        console.log('✅ PageRank disponible!', data.page_rank);
+                        window.pageRankDisplayed = true;
+                        showNotification('✅ PageRank disponible', 'success');
+                        updatePageRankSection(data.page_rank, data.page_rank_global);
+                    } else if (data.page_rank === null || data.page_rank === undefined) {
+                        everythingReady = false;
+                        console.log('⏳ PageRank en attente...', data.page_rank);
+                    }
+                    
+                    if (!desktopReady || !mobileReady) {
+                        everythingReady = false;
+                    }
+                    
+                    // Arrêter la surveillance seulement quand TOUT est prêt
+                    if (everythingReady) {
+                        console.log('🎯 Toutes les données sont prêtes !');
+                        stopWatching();
+                        showNotification('✅ Analyse SEO complète terminée', 'success');
+                    }
+                })
+                .catch(error => {
+                    console.log('❌ Erreur surveillance:', error);
+                });
         }
 
         function stopWatching() {
@@ -1101,211 +976,73 @@
             }
         }
 
-        function checkPageSpeedStatus() {
-    fetch(`/seo-analysis/${analysisId}/status`)
-        .then(response => {
-            if (!response.ok) throw new Error('Statut HTTP invalide');
-            return response.json();
-        })
-        .then(data => {
-            console.log('📊 Statut complet:', data);
-            
-            let everythingReady = true;
-            
-            // ✅ Vérifier PageSpeed Desktop
-            const desktopReady = data.desktop_ready && data.desktop_score !== null;
-            const mobileReady = data.mobile_ready && data.mobile_score !== null;
-            
-            if (desktopReady) {
-                console.log('✅ Données Desktop prêtes !');
-                if (currentStrategy === 'desktop') {
-                    fetchPageSpeed('desktop', false, true);
-                }
-            } else {
-                everythingReady = false;
-            }
-            
-            if (mobileReady) {
-                console.log('✅ Données Mobile prêtes !');
-            } else {
-                everythingReady = false;
-            }
-            
-            // 🆕 Vérifier PageRank
-            if (data.page_rank !== null && !window.pageRankDisplayed) {
-                console.log('✅ PageRank disponible!');
-                window.pageRankDisplayed = true;
-                showNotification('✅ PageRank disponible', 'success');
-                updatePageRankSection(data.page_rank, data.page_rank_global);
-            } else if (data.page_rank === null) {
-                everythingReady = false;
-                console.log('⏳ PageRank en attente...');
-            }
-            
-            // Arrêter la surveillance seulement quand TOUT est prêt
-            if (everythingReady) {
-                console.log('🎯 Toutes les données sont prêtes !');
-                stopWatching();
-                showNotification('✅ Analyse SEO complète terminée', 'success');
-            }
-        })
-        .catch(error => {
-            console.log('❌ Erreur surveillance:', error);
-        });
-}
-
-
-// 🔍 SURVEILLANCE AUTOMATIQUE UNIFIÉE
-function startWatching() {
-    if (isWatching) return;
-    isWatching = true;
-    console.log('🔍 Surveillance automatique activée');
-    
-    let checkCount = 0;
-    const maxChecks = 60; // 5 minutes max (60 * 5s)
-    
-    watchInterval = setInterval(() => {
-        checkAllStatus();
-        checkCount++;
-        
-        if (checkCount >= maxChecks) {
-            console.log('⏹️ Surveillance arrêtée (timeout)');
-            stopWatching();
-        }
-    }, 5000); // Vérifier toutes les 5 secondes
-    
-    // Vérifier immédiatement
-    checkAllStatus();
-}
-
-function checkAllStatus() {
-    fetch(`/seo-analysis/${analysisId}/status`)
-        .then(response => {
-            if (!response.ok) throw new Error('Statut HTTP invalide');
-            return response.json();
-        })
-        .then(data => {
-            console.log('📊 Statut complet:', data);
-            
-            let everythingReady = true;
-            
-            // ✅ Vérifier PageSpeed Desktop
-            const desktopReady = data.desktop_ready && data.desktop_score !== null;
-            const mobileReady = data.mobile_ready && data.mobile_score !== null;
-            
-            if (desktopReady && !window.desktopDisplayed) {
-                console.log('✅ Données Desktop prêtes !');
-                window.desktopDisplayed = true;
-                showNotification('✅ Données Desktop disponibles', 'success');
-                if (currentStrategy === 'desktop') {
-                    fetchPageSpeed('desktop', false, true);
-                }
-            }
-            
-            if (mobileReady && !window.mobileDisplayed) {
-                console.log('✅ Données Mobile prêtes !');
-                window.mobileDisplayed = true;
-                showNotification('✅ Données Mobile disponibles', 'success');
-            }
-            
-            // 🆕 Vérifier PageRank - CORRIGÉ
-            if (data.page_rank !== null && data.page_rank !== undefined && !window.pageRankDisplayed) {
-                console.log('✅ PageRank disponible!', data.page_rank);
-                window.pageRankDisplayed = true;
-                showNotification('✅ PageRank disponible', 'success');
-                updatePageRankSection(data.page_rank, data.page_rank_global);
-            } else if (data.page_rank === null || data.page_rank === undefined) {
-                everythingReady = false;
-                console.log('⏳ PageRank en attente...', data.page_rank);
-            }
-            
-            if (!desktopReady || !mobileReady) {
-                everythingReady = false;
-            }
-            
-            // Arrêter la surveillance seulement quand TOUT est prêt
-            if (everythingReady) {
-                console.log('🎯 Toutes les données sont prêtes !');
-                stopWatching();
-                showNotification('✅ Analyse SEO complète terminée', 'success');
-            }
-        })
-        .catch(error => {
-            console.log('❌ Erreur surveillance:', error);
-        });
-}
-
-
-
-
-
         function showNotification(message, type = 'info') {
-    // Couleurs et icônes selon le type
-    const config = {
-        success: { 
-            bg: 'bg-success', 
-            icon: '✅',
-            title: 'Success'
-        },
-        warning: { 
-            bg: 'bg-warning text-dark', 
-            icon: '⚠️',
-            title: 'Attention'
-        },
-        error: { 
-            bg: 'bg-danger', 
-            icon: '❌',
-            title: 'Error'
-        },
-        info: { 
-            bg: 'bg-info', 
-            icon: 'ℹ️',
-            title: 'Information'
+            // Couleurs et icônes selon le type
+            const config = {
+                success: { 
+                    bg: 'bg-success', 
+                    icon: '✅',
+                    title: 'Success'
+                },
+                warning: { 
+                    bg: 'bg-warning text-dark', 
+                    icon: '⚠️',
+                    title: 'Attention'
+                },
+                error: { 
+                    bg: 'bg-danger', 
+                    icon: '❌',
+                    title: 'Error'
+                },
+                info: { 
+                    bg: 'bg-info', 
+                    icon: 'ℹ️',
+                    title: 'Information'
+                }
+            };
+
+            const { bg, icon, title } = config[type] || config.info;
+
+            // Créer le container s'il n'existe pas
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toastId = 'toast-' + Date.now();
+            
+            const toastHTML = `
+                <div id="${toastId}" class="toast ${bg}" role="alert">
+                    <div class="toast-header">
+                        <strong class="me-auto">${icon} ${title}</strong>
+                        <small>à l'instant</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            
+            // Afficher la notification
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: 4000
+            });
+            toast.show();
+
+            // Nettoyer après fermeture
+            toastElement.addEventListener('hidden.bs.toast', function () {
+                this.remove();
+            });
         }
-    };
-
-    const { bg, icon, title } = config[type] || config.info;
-
-    // Créer le container s'il n'existe pas
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toast-container';
-        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-        toastContainer.style.zIndex = '9999';
-        document.body.appendChild(toastContainer);
-    }
-
-    const toastId = 'toast-' + Date.now();
-    
-    const toastHTML = `
-        <div id="${toastId}" class="toast ${bg}" role="alert">
-            <div class="toast-header">
-                <strong class="me-auto">${icon} ${title}</strong>
-                <small>à l'instant</small>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
-    `;
-
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    
-    // Afficher la notification
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, {
-        autohide: true,
-        delay: 4000
-    });
-    toast.show();
-
-    // Nettoyer après fermeture
-    toastElement.addEventListener('hidden.bs.toast', function () {
-        this.remove();
-    });
-}
 
         function updateButtonStates(activeStrategy) {
             document.querySelectorAll('[data-strategy]').forEach(btn => {
@@ -1506,120 +1243,274 @@ function checkAllStatus() {
         }
 
         function renderAuditHTML(audits) {
-    let html = `<div class="pagespeed-audits">`;
-    
-    // Afficher TOUTES les sections disponibles dans les données
-    let accordionId = 0;
-    
-    for (const [sectionType, items] of Object.entries(audits)) {
-        if (!items || items.length === 0) continue;
-        
-        accordionId++;
-        
-        // Déterminer le titre et l'icône en fonction du type de section
-        const sectionConfig = getSectionConfig(sectionType);
-        const accordionSectionId = `accordion-${sectionType}-${accordionId}`;
-        const collapseId = `collapse-${sectionType}-${accordionId}`;
-        
-        html += `
-        <div class="accordion audit-accordion mb-3" id="${accordionSectionId}">
-            <div class="accordion-item border-${sectionConfig.color}">
-                <h2 class="accordion-header" id="heading-${sectionType}">
-                    <button class="accordion-button ${sectionConfig.color} ${accordionId === 1 ? '' : 'collapsed'}"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#${collapseId}"
-                            aria-expanded="${accordionId === 1 ? 'true' : 'false'}"
-                            aria-controls="${collapseId}">
-                        <span class="d-flex align-items-center w-100">
-                            <span class="accordion-icon me-2">${sectionConfig.icon}</span>
-                            <span class="accordion-title flex-grow-1">${sectionConfig.title}</span>
-                            <span class="badge bg-${sectionConfig.color} ms-2">${items.length}</span>
-                            <span class="accordion-arrow ms-2">▼</span>
-                        </span>
-                    </button>
-                </h2>
-                <div id="${collapseId}"
-                     class="accordion-collapse collapse ${accordionId === 1 ? 'show' : ''}"
-                     aria-labelledby="heading-${sectionType}"
-                     data-bs-parent="#${accordionSectionId}">
-                    <div class="accordion-body p-3">
-                        <div class="audit-grid">`;
-        
-        for (const audit of items) {
-            const score = audit.score ?? null;
-            const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
+            let html = `<div class="pagespeed-audits">`;
             
-            html += `
-                            <div class="audit-card">
-                                <div class="audit-header">
-                                    <span class="audit-title">${audit.title}</span>
-                                    <div class="audit-badges">
-                                        ${audit.estimatedSavingsMs ?
-                                          `<span class="badge bg-info mb-1">+${(audit.estimatedSavingsMs / 1000).toFixed(2)}s</span>` : ''}
-                                        ${score !== null ?
-                                          `<span class="badge bg-${badge}">${Math.round(score * 100)}%</span>` : ''}
-                                    </div>
+            // Afficher TOUTES les sections disponibles dans les données
+            let accordionId = 0;
+            
+            for (const [sectionType, items] of Object.entries(audits)) {
+                if (!items || items.length === 0) continue;
+                
+                accordionId++;
+                
+                // Déterminer le titre et l'icône en fonction du type de section
+                const sectionConfig = getSectionConfig(sectionType);
+                const accordionSectionId = `accordion-${sectionType}-${accordionId}`;
+                const collapseId = `collapse-${sectionType}-${accordionId}`;
+                
+                html += `
+                <div class="accordion audit-accordion mb-3" id="${accordionSectionId}">
+                    <div class="accordion-item border-${sectionConfig.color}">
+                        <h2 class="accordion-header" id="heading-${sectionType}">
+                            <button class="accordion-button ${sectionConfig.color} ${accordionId === 1 ? '' : 'collapsed'}"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#${collapseId}"
+                                    aria-expanded="${accordionId === 1 ? 'true' : 'false'}"
+                                    aria-controls="${collapseId}">
+                                <span class="d-flex align-items-center w-100">
+                                    <span class="accordion-icon me-2">${sectionConfig.icon}</span>
+                                    <span class="accordion-title flex-grow-1">${sectionConfig.title}</span>
+                                    <span class="badge bg-${sectionConfig.color} ms-2">${items.length}</span>
+                                    <span class="accordion-arrow ms-2">▼</span>
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="${collapseId}"
+                             class="accordion-collapse collapse ${accordionId === 1 ? 'show' : ''}"
+                             aria-labelledby="heading-${sectionType}"
+                             data-bs-parent="#${accordionSectionId}">
+                            <div class="accordion-body p-3">
+                                <div class="audit-grid">`;
+                
+                for (const audit of items) {
+                    const score = audit.score ?? null;
+                    const badge = score >= 0.9 ? 'success' : score >= 0.5 ? 'warning' : 'danger';
+                    
+                    html += `
+                                    <div class="audit-card">
+                                        <div class="audit-header">
+                                            <span class="audit-title">${audit.title}</span>
+                                            <div class="audit-badges">
+                                                ${audit.estimatedSavingsMs ?
+                                                  `<span class="badge bg-info mb-1">+${(audit.estimatedSavingsMs / 1000).toFixed(2)}s</span>` : ''}
+                                                ${score !== null ?
+                                                  `<span class="badge bg-${badge}">${Math.round(score * 100)}%</span>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="audit-body">
+                                            <p class="audit-description">${audit.description || 'No description available'}</p>
+                                            ${audit.displayValue ? `<p class="audit-value">${audit.displayValue}</p>` : ''}
+                                            ${score !== null ? `
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
+                                            </div>` : ''}
+                                        </div>
+                                    </div>`;
+                }
+                
+                html += `
                                 </div>
-                                <div class="audit-body">
-                                    <p class="audit-description">${audit.description || 'No description available'}</p>
-                                    ${audit.displayValue ? `<p class="audit-value">${audit.displayValue}</p>` : ''}
-                                    ${score !== null ? `
-                                    <div class="progress mt-2" style="height: 4px;">
-                                        <div class="progress-bar bg-${badge}" style="width: ${score * 100}%"></div>
-                                    </div>` : ''}
-                                </div>
-                            </div>`;
-        }
-        
-        html += `
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>`;
-    }
-    
-    html += `</div>`;
-    return html;
-}
+                </div>`;
+            }
+            
+            html += `</div>`;
+            return html;
+        }
 
-// Nouvelle fonction pour gérer la configuration des sections
-function getSectionConfig(sectionType) {
-    const configs = {
-        opportunities: {
-            title: 'Opportunities For Optimization',
-            icon: '⚡',
-            color: 'warning'
-        },
-        diagnostics: {
-            title: 'Technical Diagnostics',
-            icon: '🔍', 
-            color: 'info'
-        },
-        passed: {
-            title: 'Passed Audits',
-            icon: '✅',
-            color: 'success'
-        },
-        informative: {
-            title: 'Informative Audits',
-            icon: '📘',
-            color: 'secondary'
-        },
-        // Ajoutez d'autres types au besoin
-    };
-    
-    // Retourne la configuration ou une configuration par défaut
-    return configs[sectionType] || {
-        title: capitalize(sectionType),
-        icon: '📊',
-        color: 'primary'
-    };
-}
+        // Nouvelle fonction pour gérer la configuration des sections
+        function getSectionConfig(sectionType) {
+            const configs = {
+                opportunities: {
+                    title: 'Opportunities For Optimization',
+                    icon: '⚡',
+                    color: 'warning'
+                },
+                diagnostics: {
+                    title: 'Technical Diagnostics',
+                    icon: '🔍', 
+                    color: 'info'
+                },
+                passed: {
+                    title: 'Passed Audits',
+                    icon: '✅',
+                    color: 'success'
+                },
+                informative: {
+                    title: 'Informative Audits',
+                    icon: '📘',
+                    color: 'secondary'
+                },
+                // Ajoutez d'autres types au besoin
+            };
+            
+            // Retourne la configuration ou une configuration par défaut
+            return configs[sectionType] || {
+                title: capitalize(sectionType),
+                icon: '📊',
+                color: 'primary'
+            };
+        }
 
         function capitalize(str) {
             return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // NOUVELLE FONCTION POUR METTRE À JOUR LA SECTION PAGERANK AVEC LE NOUVEAU DESIGN
+        function updatePageRankSection(rank, globalRank) {
+            console.log('🎯 Mise à jour PageRank section avec nouveau design:', { rank, globalRank });
+            
+            // ⚠️ VÉRIFIEZ QUE LES VALEURS SONT VALIDES
+            if (rank === undefined || rank === null) {
+                console.error('❌ PageRank est undefined/null:', rank);
+                return;
+            }
+            
+            const pageRankSection = document.querySelector('[data-pagerank-section]');
+            if (!pageRankSection) {
+                console.error('❌ Section PageRank non trouvée');
+                return;
+            }
+            
+            const safeRank = rank || 0;
+            const safeGlobalRank = globalRank || null;
+            
+            // Déterminer le niveau et les couleurs selon le nouveau design
+            let color, gradient, icon, level, bgColor;
+            
+            if (safeRank >= 7) {
+                color = '#10b981';
+                gradient = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                icon = 'bi-trophy-fill';
+                level = 'Excellent';
+                bgColor = 'rgba(16, 185, 129, 0.1)';
+            } else if (safeRank >= 4) {
+                color = '#f59e0b';
+                gradient = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                icon = 'bi-graph-up-arrow';
+                level = 'Moyen';
+                bgColor = 'rgba(245, 158, 11, 0.1)';
+            } else {
+                color = '#ef4444';
+                gradient = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                icon = 'bi-exclamation-triangle-fill';
+                level = 'Faible';
+                bgColor = 'rgba(239, 68, 68, 0.1)';
+            }
+            
+            // Générer le HTML avec le nouveau design professionnel
+            pageRankSection.innerHTML = `
+                <div class="pagerank-card mb-4">
+                    <!-- Header avec icône et titre -->
+                    <div class="pagerank-header" style="background: ${gradient};">
+                        <div class="header-content">
+                            <div class="header-icon">
+                                <i class="bi bi-bar-chart-fill"></i>
+                            </div>
+                            <div>
+                                <h3 class="pagerank-title">Domain PageRank</h3>
+                                <p class="pagerank-subtitle">Authority score based on OpenPageRank</p>
+                            </div>
+                        </div>
+                        <div class="domain-score" style="background: rgba(255, 255, 255, 0.2); color: white;">
+                            ${safeRank}/10
+                        </div>
+                    </div>
+
+                    <!-- Contenu principal -->
+                    <div class="pagerank-content">
+                        <!-- Score et indicateur visuel -->
+                        <div class="score-section">
+                            <div class="score-display">
+                                <div class="score-circle">
+                                    <div class="circle-progress" style="--progress: ${safeRank * 10}%; --color: ${color};">
+                                        <div class="score-number">${safeRank}</div>
+                                        <div class="score-label">/10</div>
+                                    </div>
+                                </div>
+                                <div class="score-details">
+                                    <div class="score-level" style="color: ${color};">
+                                        <i class="bi ${icon} me-2"></i>
+                                        ${level}
+                                    </div>
+                                    ${safeGlobalRank ? `
+                                    <div class="global-rank">
+                                        <div class="rank-label">Global Ranking</div>
+                                        <div class="rank-value">#${new Intl.NumberFormat().format(safeGlobalRank)}</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Barre de progression détaillée -->
+                        <div class="progress-section">
+                            <div class="progress-labels">
+                                <span>0</span>
+                                <span>5</span>
+                                <span>10</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: ${safeRank * 10}%; background: ${gradient};"></div>
+                                </div>
+                                <div class="progress-indicator" style="left: ${safeRank * 10}%; background: ${color};">
+                                    <div class="indicator-tooltip">${safeRank}</div>
+                                </div>
+                            </div>
+                            <div class="progress-levels">
+                                <div class="level-item">
+                                    <div class="level-dot" style="background: #ef4444;"></div>
+                                    <span>Faible</span>
+                                </div>
+                                <div class="level-item">
+                                    <div class="level-dot" style="background: #f59e0b;"></div>
+                                    <span>Moyen</span>
+                                </div>
+                                <div class="level-item">
+                                    <div class="level-dot" style="background: #10b981;"></div>
+                                    <span>Excellent</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informations contextuelles -->
+                        <div class="info-section">
+                            <div class="section-header">
+                                <i class="bi bi-info-circle"></i>
+                                <h4>About PageRank</h4>
+                            </div>
+                            <p class="info-text">
+                                This score reflects the domain's public reputation on the global web, calculated from open source data. 
+                                Higher scores indicate greater authority and trustworthiness.
+                            </p>
+                            <div class="info-footer">
+                                <i class="bi bi-shield-check"></i>
+                                <span>Data provided by OpenPageRank Initiative</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer avec timestamp -->
+                    <div class="pagerank-footer">
+                        <div class="last-updated">
+                            <i class="bi bi-clock-history"></i>
+                            Last updated ${new Date().toLocaleString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('✅ Section PageRank mise à jour avec le nouveau design');
         }
 
         window.fetchPageSpeed = fetchPageSpeed;
@@ -1639,94 +1530,4 @@ function getSectionConfig(sectionType) {
             startWatching();
         }, 2000);
     });
-
-    
-
-
-// Rafraîchissement automatique quand PageRank est disponible
-function checkForPageRank() {
-    const analysisId = {{ $analysis->id }};
-    
-    fetch(`/seo-analysis/${analysisId}/status`)
-        .then(response => response.json())
-        .then(data => {
-            // Si PageRank est maintenant disponible
-            if (data.page_rank !== null && !window.pageRankDisplayed) {
-                console.log('🔄 PageRank disponible, rafraîchissement...');
-                window.pageRankDisplayed = true;
-                
-                // Option 1: Rafraîchir la page
-                // location.reload();
-                
-                // Option 2: Mettre à jour juste la section PageRank
-                updatePageRankSection(data.page_rank, data.page_rank_global);
-            }
-        })
-        .catch(error => console.log('❌ Erreur vérification PageRank:', error));
-}
-
-function updatePageRankSection(rank, globalRank) {
-    console.log('🎯 Mise à jour PageRank section:', { rank, globalRank });
-    
-    // ⚠️ VÉRIFIEZ QUE LES VALEURS SONT VALIDES
-    if (rank === undefined || rank === null) {
-        console.error('❌ PageRank est undefined/null:', rank);
-        return;
-    }
-    
-    const pageRankSection = document.querySelector('[data-pagerank-section]');
-    if (!pageRankSection) {
-        console.error('❌ Section PageRank non trouvée');
-        return;
-    }
-    
-    const safeRank = rank || 0;
-    const safeGlobalRank = globalRank || null;
-    
-    const color = safeRank >= 6 ? '#00ff99' : safeRank >= 3 ? '#ffcc00' : '#ff4d4d';
-    const emoji = safeRank >= 6 ? '🟢' : safeRank >= 3 ? '🟠' : '🔴';
-    
-    pageRankSection.innerHTML = `
-        <div class="glass-card mt-4 p-4">
-            <div style="background-color: #dbe1f7;" class="px-4 py-3 rounded-top mb-4">
-                <h5 class="fw-bold mb-0" style="color:#2e4db6;">🔗 Domain PageRank</h5>
-            </div>
-            <div class="flex items-center space-x-3 text-xl font-bold">
-                <span style="color: ${color};">${emoji} ${safeRank} / 10</span>
-                <span class="text-sm text-muted" style="font-size: 0.85rem;">
-                    (according to OpenPageRank)
-                </span>
-            </div>
-            ${safeGlobalRank ? `
-            <p class="mt-2 text-muted" style="font-size: 0.9rem; font-weight: 600; color:#2454b9 !important;">
-                Overall ranking : <strong>#${new Intl.NumberFormat().format(safeGlobalRank)}</strong>
-            </p>
-            ` : ''}
-            <p class="mt-2 text-muted" style="font-size: 0.85rem;">
-                This score reflects the domain's public reputation on the global web, calculated from open source data.
-            </p>
-        </div>
-    `;
-    
-    console.log('✅ Section PageRank mise à jour avec succès');
-}
-
-// Vérifier toutes les 5 secondes pendant 2 minutes
-let checkCount = 0;
-const pageRankInterval = setInterval(() => {
-    checkForPageRank();
-    checkCount++;
-    if (checkCount > 24) { // 2 minutes max
-        clearInterval(pageRankInterval);
-    }
-}, 5000);
-
-// Vérifier immédiatement au chargement
-setTimeout(checkForPageRank, 2000);
-
-
-
-
-
-    
 </script>
