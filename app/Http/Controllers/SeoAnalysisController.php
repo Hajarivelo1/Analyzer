@@ -234,13 +234,14 @@ private function generateManualFallbackData(string $url): array
  */
 private function prepareAnalysisData(Project $project, array $scraperData, ?array $whoisData): array
 {
-    // 🔥 DEBUG : Vérifier ce qui est dans technical_audit
-    Log::info('🔍 Technical Audit Data', [
-        'has_technical_audit' => isset($scraperData['technical_audit']),
-        'technical_audit_keys' => $scraperData['technical_audit'] ? array_keys($scraperData['technical_audit']) : 'none',
-        'has_title' => $scraperData['technical_audit']['has_title'] ?? 'not_set'
-    ]);
-
+     // 🔥 CORRECTION : Vérification sécurisée de technical_audit
+     $technicalAudit = $scraperData['technical_audit'] ?? [];
+    
+     Log::info('🔍 Technical Audit Data', [
+         'has_technical_audit' => isset($scraperData['technical_audit']),
+         'technical_audit_keys' => !empty($technicalAudit) ? array_keys($technicalAudit) : 'none',
+         'has_title' => $technicalAudit['has_title'] ?? 'not_set' // ⬅️ MAINTENANT SÉCURISÉ
+     ]);
     return [
         'project_id' => $project->id,
         'page_url' => $project->base_url,
@@ -268,8 +269,8 @@ private function prepareAnalysisData(Project $project, array $scraperData, ?arra
         'readability_score' => $scraperData['readability_score'] ?? null,
         'cloudflare_blocked' => $scraperData['cloudflare_blocked'] ?? false,
         
-        // 🔥 AUDIT TECHNIQUE - CORRIGÉ
-        'technical_audit' => $scraperData['technical_audit'] ?? $this->getDefaultTechnicalAudit(),
+       // 🔥 AUDIT TECHNIQUE - CORRIGÉ (utilise la variable sécurisée)
+       'technical_audit' => $technicalAudit, // ⬅️ CORRECTION ICI
         
         // Métriques techniques individuelles (pour compatibilité)
         'https_enabled' => $scraperData['https_enabled'] ?? false,

@@ -733,6 +733,21 @@
                 $content = is_array($analysis->content_analysis) ? $analysis->content_analysis : [];
                 $paragraphs = $content['paragraphs'] ?? [];
                 $hasParagraphs = is_array($paragraphs) && count($paragraphs) > 0;
+
+
+                // 🔥 DEBUG TEMPORAIRE
+    echo "<!-- DEBUG: ";
+    echo "hasMainContent: " . ($hasMainContent ? 'true' : 'false') . ", ";
+    echo "paragraph_count: " . ($content['paragraph_count'] ?? '0') . ", ";
+    echo "paragraphs count: " . count($paragraphs) . ", ";
+    echo "short_paragraphs: " . ($content['short_paragraphs'] ?? '0') . ", ";
+    echo "duplicates: " . count($content['duplicate_paragraphs'] ?? []);
+    echo " -->";
+
+
+
+
+
             @endphp
             <div class="row">
                 <div class="col-md-12">
@@ -752,10 +767,13 @@
                             @endif
                             <br>
                             @if($hasParagraphs)
-                                ✅ {{ count($paragraphs) }} paragraphs extracted
-                            @else
-                                ❌ No paragraphs data
-                            @endif
+    ✅ {{ $content['paragraph_count'] }} paragraphs extracted
+    @if(count($paragraphs) < $content['paragraph_count'])
+        <br><small>({{ count($paragraphs) }} displayed for performance)</small>
+    @endif
+@else
+    ❌ No paragraphs data
+@endif
                         </div>
                         @if(!empty($content['paragraph_count']))
                             <div class="mt-3">
@@ -896,7 +914,7 @@
             </div>
         </div>
 
-        <div class="glass-card mt-5 p-4" style="background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000;">
+        <div class="glass-card mt-5 p-4" style="background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; word-wrap: break-word; overflow-wrap: break-word;">
             <div class="d-flex align-items-center mb-3">
                 <img src="https://www.google.com/s2/favicons?domain={{ parse_url($analysis->page_url ?? '', PHP_URL_HOST) }}"
                      alt="favicon"
