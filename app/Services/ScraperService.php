@@ -4,15 +4,16 @@ namespace App\Services;
 
 use Symfony\Component\DomCrawler\Crawler as DomCrawler;
 use Illuminate\Support\Facades\Log;
+use App\Models\Project; // 🔥 AJOUTER CET IMPORT
 
 class ScraperService
 {
     /**
      * Analyse une URL et retourne les données SEO extraites.
      */
-    public function analyze(string $url): array
+    public function analyze(string $url, $projectId = null): array
     {
-        Log::info('🔍 ScraperService - Début analyse', ['url' => $url]);
+        Log::info('🔍 ScraperService - Début analyse', ['url' => $url, 'project_id' => $projectId]);
 
         // 🔥 CONFIGURATION ULTRA-RAPIDE avec timeout réduit
         $ch = curl_init($url);
@@ -88,6 +89,11 @@ class ScraperService
             $keywords = $this->extractKeywordsOptimized($text);
             $density = $this->calculateKeywordDensity($text, $keywords);
 
+             // 🔥 NOUVEAU : Mettre à jour le projet avec les keywords
+             if ($projectId && !empty($keywords)) {
+                $this->updateProjectKeywords($projectId, $keywords);
+            }
+
             // 🧾 Analyse de contenu (simplifiée)
             $contentAnalysis = $this->analyzeParagraphsOptimized($text);
             $readabilityScore = $this->calculateReadability($text);
@@ -147,7 +153,35 @@ class ScraperService
             return $this->generateFallbackData($url);
         }
     }
-
+/**
+     * 🔥 NOUVELLE MÉTHODE : Mettre à jour les keywords du projet
+     */
+    private function updateProjectKeywords($projectId, $keywordsArray)
+    {
+        try {
+            $project = Project::find($projectId);
+            
+            if ($project && is_array($keywordsArray) && !empty($keywordsArray)) {
+                // Prendre les 8 mots-clés les plus importants
+                $topKeywords = array_slice(array_keys($keywordsArray), 0, 8);
+                $keywordsString = implode(', ', $topKeywords);
+                
+                $project->target_keywords = $keywordsString;
+                $project->save();
+                
+                Log::info('✅ Project keywords updated', [
+                    'project_id' => $projectId,
+                    'project_name' => $project->name,
+                    'keywords' => $keywordsString
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to update project keywords', [
+                'project_id' => $projectId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
     /**
      * 🔥 COMPTAGE DE MOTS CORRECT pour le français
      */

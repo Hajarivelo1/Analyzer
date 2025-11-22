@@ -90,7 +90,10 @@ public function StoreProject(Request $request)
         'competitor_analysis' => 'nullable|in:basic,advanced,none'
     ]);
 
-   
+    // Nettoyer les keywords
+    if (!empty($validated['target_keywords'])) {
+        $validated['target_keywords'] = trim($validated['target_keywords']);
+    }
 
     Project::create([
         'user_id' => Auth::id(),

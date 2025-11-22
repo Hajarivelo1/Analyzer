@@ -42,7 +42,7 @@ class SeoAnalysisController extends Controller
         $domain = parse_url($project->base_url, PHP_URL_HOST);
 
         // 🔥 OPTIMISATION : Exécution parallèle des tâches rapides
-        $scraperData = $this->runScraperWithFallback($scraper, $project->base_url);
+        $scraperData = $this->runScraperWithFallback($scraper, $project->base_url, $project->id);
         $whoisData = $this->runWhoisLookup($whois, $domain);
 
         // 🗂️ Préparer les données pour la sauvegarde
@@ -117,19 +117,21 @@ Log::info('🔥 DISPATCH PageSpeed ET PageRank en background', [
     /**
  * 🔥 CORRIGÉ : Scraper avec fallback robuste
  */
-private function runScraperWithFallback(ScraperService $scraper, string $url): array
+private function runScraperWithFallback(ScraperService $scraper, string $url, $projectId = null): array
 {
-    Log::info('🔍 Scraper avec fallback robuste', ['url' => $url]);
+    Log::info('🔍 Scraper avec fallback robuste', ['url' => $url, 'project_id' => $projectId]);
 
     // 🔥 ESSAI DIRECT avec le nouveau scraper optimisé
     try {
-        $result = $scraper->analyze($url);
+        // 🔥 CORRECTION : $projectId est maintenant un paramètre
+        $result = $scraper->analyze($url, $projectId);
         
-        // ⚠️ CRITIQUE : Le nouveau scraper retourne TOUJOURS 'success'
         if (is_array($result) && ($result['status'] === 'success')) {
             Log::info('✅ Scraper Laravel réussi', [
                 'word_count' => $result['word_count'] ?? 0,
-                'title' => substr($result['title'] ?? '', 0, 50)
+                'title' => substr($result['title'] ?? '', 0, 50),
+                'keywords_count' => !empty($result['keywords']) ? count($result['keywords']) : 0,
+                'project_id' => $projectId
             ]);
             return $result;
         }

@@ -133,6 +133,60 @@ Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis 
 
 
 
+    Route::get('/fix-keywords-now', function() {
+        $projects = \App\Models\Project::whereIn('id', [146, 158, 159])->get();
+        
+        foreach ($projects as $project) {
+            // Récupérer la dernière analyse
+            $latestAnalysis = $project->seoAnalyses()
+                ->orderBy('created_at', 'desc')
+                ->first();
+                
+            if ($latestAnalysis && !empty($latestAnalysis->keywords)) {
+                // Décoder le JSON
+                $keywordsArray = json_decode($latestAnalysis->keywords, true);
+                
+                if (is_array($keywordsArray)) {
+                    // Prendre les clés (mots-clés) du tableau associatif
+                    $topKeywords = array_slice(array_keys($keywordsArray), 0, 8);
+                    $keywordsString = implode(', ', $topKeywords);
+                    
+                    // Mettre à jour le projet
+                    $project->target_keywords = $keywordsString;
+                    $project->save();
+                    
+                    echo "✅ <strong>{$project->name}</strong> mis à jour : {$keywordsString}<br>";
+                } else {
+                    echo "❌ JSON invalide pour {$project->name}<br>";
+                }
+            } else {
+                echo "❌ Aucune analyse trouvée pour {$project->name}<br>";
+            }
+        }
+        
+        return "<br><a href='/admin/projects'>Voir la page des projets</a>";
+    });
+
+
+
+    Route::get('/check-scraper-signature', function() {
+        $scraper = new ReflectionClass(App\Services\ScraperService::class);
+        $method = $scraper->getMethod('analyze');
+        $params = $method->getParameters();
+        
+        $paramNames = [];
+        foreach ($params as $param) {
+            $paramNames[] = $param->getName() . ($param->isDefaultValueAvailable() ? ' (optional)' : ' (required)');
+        }
+        
+        return [
+            'method_signature' => 'analyze(' . implode(', ', $paramNames) . ')',
+            'has_projectId' => count($params) > 1 ? '✅ OUI' : '❌ NON',
+            'projectId_position' => count($params) > 1 ? $params[1]->getName() : 'NOT FOUND'
+        ];
+    });
+
+
     Route::delete('/seo/history/{generation}', [\App\Http\Controllers\User\SeoHistoryController::class, 'destroy'])
     ->name('seo.history.destroy');
 
