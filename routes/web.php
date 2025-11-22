@@ -1,12 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsUser;
 use App\Http\Controllers\Admin\PlanController;
-use App\Http\Controllers\Admin\ProjectController;
+use App\Http\Controllers\Admin\ProjectController; // ⬅️ IMPORT CORRECT
 use App\Http\Controllers\SeoAnalysisController;
 use App\Http\Controllers\WhoisController;
 use App\Http\Controllers\Admin\SeoContentController;
@@ -52,7 +54,7 @@ Route::prefix('admin')->middleware(['auth', IsAdmin::class])->group(function () 
         Route::post('/store/projects', 'StoreProject')->name('store.projects');
     });
 
-    // Historique SEO côté admin (si tu veux l'afficher dans la sidebar admin)
+    // Historique SEO côté admin
     Route::get('/seo/history', [SeoHistoryController::class, 'index'])
         ->name('admin.seo.history.index');
     Route::post('/seo/history/reuse/{generation}', [SeoHistoryController::class, 'reuse'])
@@ -86,27 +88,35 @@ Route::middleware('auth')->group(function () {
     Route::post('/seo/history/reuse/{generation}', [SeoHistoryController::class, 'reuse'])
         ->name('seo.history.reuse');
 
-    // ✅ PageSpeed status route - VERSION CORRIGÉE
-Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis $analysis) {
-    \Log::info('🔍 Statut PageSpeed demandé', [
-        'analysis_id' => $analysis->id,
-        'desktop_score' => $analysis->pagespeed_desktop_score,
-        'mobile_score' => $analysis->pagespeed_mobile_score,
-        'page_rank' => $analysis->page_rank, // ⬅️ AJOUTEZ CES LOGS
-        'page_rank_global' => $analysis->page_rank_global // ⬅️
-    ]);
-
-    return response()->json([
-        'desktop_ready' => !empty($analysis->pagespeed_desktop_score),
-        'mobile_ready' => !empty($analysis->pagespeed_mobile_score),
-        'desktop_score' => $analysis->pagespeed_desktop_score,
-        'mobile_score' => $analysis->pagespeed_mobile_score,
-        'desktop_updated' => $analysis->updated_at->toDateTimeString(),
-        // ⬅️ AJOUTEZ CES DEUX LIGNES CRITIQUES
-        'page_rank' => $analysis->page_rank,
-        'page_rank_global' => $analysis->page_rank_global
-    ]);
-});
+    // ✅ PageSpeed status route
+    Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis $analysis) {
+    
+        // 🔥 CACHE : 10 secondes pour éviter les appels trop fréquents
+        $cacheKey = "pagespeed_status_{$analysis->id}";
+        $cachedResponse = Cache::remember($cacheKey, 10, function () use ($analysis) {
+            
+            \Log::info('🔍 Statut PageSpeed demandé', [
+                'analysis_id' => $analysis->id,
+                'desktop_score' => $analysis->pagespeed_desktop_score,
+                'mobile_score' => $analysis->pagespeed_mobile_score,
+                'page_rank' => $analysis->page_rank,
+                'page_rank_global' => $analysis->page_rank_global
+            ]);
+    
+            return [
+                'desktop_ready' => !empty($analysis->pagespeed_desktop_score),
+                'mobile_ready' => !empty($analysis->pagespeed_mobile_score),
+                'desktop_score' => $analysis->pagespeed_desktop_score,
+                'mobile_score' => $analysis->pagespeed_mobile_score,
+                'desktop_updated' => $analysis->updated_at->toDateTimeString(),
+                'page_rank' => $analysis->page_rank,
+                'page_rank_global' => $analysis->page_rank_global,
+                'cached_at' => now()->toDateTimeString() // Pour debug
+            ];
+        });
+    
+        return response()->json($cachedResponse);
+    });
 
     // ✅ PageSpeed data route
     Route::get('/seo-analysis/{analysis}/pagespeed', function (\App\Models\SeoAnalysis $analysis) {
@@ -131,27 +141,21 @@ Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis 
         return response()->json($data);
     });
 
-
-
     Route::get('/fix-keywords-now', function() {
         $projects = \App\Models\Project::whereIn('id', [146, 158, 159])->get();
         
         foreach ($projects as $project) {
-            // Récupérer la dernière analyse
             $latestAnalysis = $project->seoAnalyses()
                 ->orderBy('created_at', 'desc')
                 ->first();
                 
             if ($latestAnalysis && !empty($latestAnalysis->keywords)) {
-                // Décoder le JSON
                 $keywordsArray = json_decode($latestAnalysis->keywords, true);
                 
                 if (is_array($keywordsArray)) {
-                    // Prendre les clés (mots-clés) du tableau associatif
                     $topKeywords = array_slice(array_keys($keywordsArray), 0, 8);
                     $keywordsString = implode(', ', $topKeywords);
                     
-                    // Mettre à jour le projet
                     $project->target_keywords = $keywordsString;
                     $project->save();
                     
@@ -166,8 +170,6 @@ Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis 
         
         return "<br><a href='/admin/projects'>Voir la page des projets</a>";
     });
-
-
 
     Route::get('/check-scraper-signature', function() {
         $scraper = new ReflectionClass(App\Services\ScraperService::class);
@@ -186,10 +188,38 @@ Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis 
         ];
     });
 
+    Route::delete('/seo/history/{generation}', [SeoHistoryController::class, 'destroy'])
+        ->name('seo.history.destroy');
 
-    Route::delete('/seo/history/{generation}', [\App\Http\Controllers\User\SeoHistoryController::class, 'destroy'])
-    ->name('seo.history.destroy');
+    // 🔥 ROUTES CACHE CORRIGÉES - DÉPLACÉES ICI
+    Route::post('/projects/{id}/clear-cache', [SeoAnalysisController::class, 'clearProjectCache'])
+        ->name('projects.clear-cache');
+        
+    // ✅ ROUTE CACHE CORRIGÉE - ProjectController sans "Admin\"
+    Route::post('/projects/refresh-cache', [ProjectController::class, 'refreshProjectsCache'])
+        ->name('projects.refresh-cache');
+        
+    Route::get('/projects/{id}/refresh', [SeoAnalysisController::class, 'show'])
+        ->name('projects.show.refresh')
+        ->defaults('refresh', 'true');
+});
 
+// Route de test du cache
+Route::get('/test-cache', function() {
+    // Test écriture
+    Cache::put('test_key', 'Hello Cache!', 60);
+    
+    // Test lecture
+    $value = Cache::get('test_key');
+    
+    // Vérifier dans la base
+    $cacheEntry = DB::table('cache')->where('key', 'test_key')->first();
+    
+    return [
+        'from_cache' => $value,
+        'in_database' => $cacheEntry ? '✅ Present' : '❌ Missing',
+        'driver' => config('cache.default')
+    ];
 });
 
 require __DIR__.'/auth.php';

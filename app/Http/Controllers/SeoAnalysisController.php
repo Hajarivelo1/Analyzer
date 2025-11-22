@@ -18,6 +18,15 @@ class SeoAnalysisController extends Controller
 {
     public function create()
     {
+
+        $cacheKey = 'user_projects_' . auth()->id();
+        // 🔥 OPTIMISATION : Cache des projets pendant 30 minutes
+        $projects = Cache::remember($cacheKey, 1800, function () {
+            return Project::where('user_id', auth()->id())->get();
+        });
+
+
+
         $projects = Project::where('user_id', auth()->id())->get();
         return view('admin.backend.analysis.create', compact('projects'));
     }
@@ -488,31 +497,83 @@ private function dispatchAsyncJobs(SeoAnalysis $seoAnalysis, string $url, string
     }
 
     public function show($id, Request $request)
-    {
-        // 🔍 Récupération sécurisée du projet
-        $project = Project::where('id', $id)
-                          ->where('user_id', auth()->id())
-                          ->firstOrFail();
-
-        // 🧠 Récupération de l'analyse demandée ou la plus récente
-        $analysis = $this->getRequestedAnalysis($request, $project);
-
-        if (!$analysis) {
-            abort(404, 'Aucune analyse SEO disponible pour ce projet.');
-        }
-
-        // 🔥 OPTIMISATION : Chargement frais avec vérification PageSpeed
-        $analysis = $this->refreshAnalysisWithPageSpeedCheck($analysis);
-
-        // ✅ Transmission à la vue
-        return view('user.projects.show', [
-            'project' => $project,
-            'analysis' => $analysis,
-            'scores' => $analysis->pagespeed_scores ?? [],
-            'metrics' => $analysis->pagespeed_metrics ?? [],
-            'auditFragments' => $analysis->pagespeed_audits ?? [],
-        ]);
+{
+    $userId = auth()->id();
+    $analysisId = $request->get('analysis_id');
+    $forceRefresh = $request->get('refresh') === 'true';
+    
+    // 🔥 CLÉ DE CACHE INTELLIGENTE
+    $cacheKey = "project_show_{$id}_" . ($analysisId ? "analysis_{$analysisId}" : "latest") . "_user_{$userId}";
+    
+    // 🔥 INVALIDATION : Si forceRefresh ou nouvelle analyse
+    if ($forceRefresh) {
+        Cache::forget($cacheKey);
+        Log::info('🔄 Cache forcément rafraîchi', ['cache_key' => $cacheKey]);
     }
+
+    // 🔥 OPTIMISATION : Cache pendant 15 minutes avec fallback
+    try {
+        $viewData = Cache::remember($cacheKey, 900, function () use ($id, $request, $userId) {
+            return $this->loadProjectData($id, $request, $userId);
+        });
+    } catch (\Exception $e) {
+        // 🔥 FALLBACK : Si cache échoue, charger normalement
+        Log::warning('❌ Cache failed, using direct load', ['error' => $e->getMessage()]);
+        $viewData = $this->loadProjectData($id, $request, $userId);
+    }
+
+    // ✅ Transmission à la vue
+    return view('user.projects.show', $viewData);
+}
+
+/**
+ * 🔥 METHODE EXTRACTED pour le chargement des données
+ */
+private function loadProjectData($id, Request $request, $userId): array
+{
+    $project = Project::where('id', $id)
+                      ->where('user_id', $userId)
+                      ->firstOrFail();
+
+    $analysis = $this->getRequestedAnalysis($request, $project);
+
+    if (!$analysis) {
+        abort(404, 'Aucune analyse SEO disponible pour ce projet.');
+    }
+
+    $analysis = $this->refreshAnalysisWithPageSpeedCheck($analysis);
+
+    return [
+        'project' => $project,
+        'analysis' => $analysis,
+        'scores' => $analysis->pagespeed_scores ?? [],
+        'metrics' => $analysis->pagespeed_metrics ?? [],
+        'auditFragments' => $analysis->pagespeed_audits ?? [],
+    ];
+}
+
+/**
+ * 🔥 METHODE POUR INVALIDER LE CACHE QUAND BESOIN
+ */
+public function clearProjectCache($projectId): void
+{
+    $userId = auth()->id();
+    $cacheKeys = [
+        "project_show_{$projectId}_latest_user_{$userId}",
+        "project_show_{$projectId}_analysis_*_user_{$userId}",
+    ];
+    
+    foreach ($cacheKeys as $key) {
+        if (str_contains($key, '*')) {
+            // Pour les clés avec wildcard, tu peux utiliser Redis ou un système de tags
+            Cache::forget($key);
+        } else {
+            Cache::forget($key);
+        }
+    }
+    
+    Log::info('🗑️ Cache projet nettoyé', ['project_id' => $projectId]);
+}
 
     /**
      * 🔥 Récupération de l'analyse demandée

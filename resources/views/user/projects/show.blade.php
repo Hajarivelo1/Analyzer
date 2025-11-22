@@ -279,6 +279,16 @@
     font-size: 1.1rem;
 }
 
+
+.section-content {
+    /* ✅ Permet au contenu de s'adapter */
+    width: auto;
+    min-width: 0; /* Important pour flex/grid */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+
 .info-text {
     color: #6b7280;
     line-height: 1.6;

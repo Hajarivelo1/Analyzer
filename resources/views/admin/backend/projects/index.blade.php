@@ -493,6 +493,15 @@
                 <h1 class="projects-header-title">Projects Management</h1>
                 <p class="projects-header-subtitle">Monitor and manage all your SEO analysis projects</p>
             </div>
+            <!-- ✅ Bouton Refresh Cache - Pour tous les users -->
+    <form action="{{ route('projects.refresh-cache') }}" method="POST" class="d-inline">
+        @csrf
+        <button type="submit" class="projects-add-btn mx-4" style="background: rgba(255, 255, 255, 0.15);" 
+                title="Refresh my projects cache">
+            <i class="bi bi-arrow-clockwise"></i>
+            Refresh My Cache
+        </button>
+    </form>
             <a href="{{route('add.projects')}}" class="projects-add-btn">
                 <i class="bi bi-plus-circle"></i>
                 Add New Project
