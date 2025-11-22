@@ -62,13 +62,13 @@ nav {
     background: rgba(255, 255, 255, 0.08);
    
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease; /* ✅ Remplacer par spécifique */
 }
 
 .glass-nav-item.active, .glass-nav-item:hover {
     background: rgba(37, 99, 235, 0.7);
     color: white;
-    transform: translateX(5px);
+    
     box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
 }
 
@@ -122,7 +122,7 @@ nav {
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 0.5rem;
     color: #1f2937;
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .glass-btn:hover {
@@ -157,7 +157,7 @@ nav {
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 1rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    transition: box-shadow 0.3s ease; /* ✅ Remplacer par spécifique */
 }
 
 .glass-card:hover {
@@ -298,11 +298,11 @@ nav {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(248, 250, 252, 0.9));
     border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow: 0 12px 40px rgba(37, 99, 235, 0.15);
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: box-shadow 0.3s ease; /* ✅ Simplifier */
 }
 
 .personal-info-card:hover {
-    transform: translateY(-5px);
+    
     box-shadow: 0 20px 50px rgba(37, 99, 235, 0.2);
 }
 
@@ -326,7 +326,7 @@ nav {
     border: 1px solid rgba(37, 99, 235, 0.2);
     border-radius: 0.75rem;
     padding: 0.75rem 1rem;
-    transition: all 0.3s ease;
+    transition: box-shadow 0.3s ease;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
 }
 
@@ -342,7 +342,7 @@ nav {
     border: 1px solid rgba(37, 99, 235, 0.2);
     border-radius: 0.75rem;
     padding: 0.75rem 1rem;
-    transition: all 0.3s ease;
+    transition: box-shadow 0.3s ease;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
     resize: vertical;
     min-height: 100px;
@@ -396,7 +396,7 @@ nav {
     border: 1px solid rgba(16, 185, 129, 0.2);
     border-radius: 0.75rem;
     padding: 0.75rem 1rem;
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .enhanced-security-input:focus {
@@ -461,11 +461,7 @@ nav {
     display: inline-block;
 }
 
-@keyframes wave {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(10deg); }
-    75% { transform: rotate(-10deg); }
-}
+
 
 @media (max-width: 768px) {
     .glass-sidebar {
@@ -545,7 +541,7 @@ nav {
     transition: transform 0.2s ease;
 }
 .score-card:hover {
-    transform: scale(1.03);
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
 }
 
 .score-category {
@@ -636,7 +632,7 @@ nav {
     padding: 1.25rem;
     background: white;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
     display: flex;
     flex-direction: column;
     height: fit-content;
@@ -647,7 +643,7 @@ nav {
 
 .audit-card:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    
 }
 
 .audit-header {
@@ -768,7 +764,7 @@ table {
 
 /* Transition smooth */
 .audit-accordion .accordion-collapse {
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 /* Responsive */
@@ -1061,10 +1057,7 @@ table {
 .dot-2 { animation-delay: -0.16s; }
 .dot-3 { animation-delay: 0s; }
 
-@keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -1114,7 +1107,7 @@ table {
     justify-content: center;
     font-size: 0.8rem;
     margin-bottom: 0.5rem;
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .step.active .step-icon {
@@ -1136,16 +1129,11 @@ table {
 
 /* Progress Bar Animation */
 .progress-bar-animated {
-    background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c);
-    background-size: 400% 400%;
-    animation: gradientShift 2s ease infinite;
+    background: linear-gradient(135deg, #667eea, #764ba2); /* ✅ Simplifier */
+    
 }
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
+
 
 .progress-container {
     position: relative;

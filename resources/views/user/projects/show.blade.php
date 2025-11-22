@@ -1,6 +1,665 @@
 @extends('admin.admin_master')
 
 @section('admin')
+<style>
+.pagerank-card {
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.08),
+        0 2px 10px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+    /* SUPPRIMER la transition générale */
+}
+
+.pagerank-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.12),
+        0 4px 20px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Transition spécifique seulement au hover */
+}
+
+.pagerank-header {
+    color: white;
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    overflow: hidden;
+}
+
+.pagerank-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.pagerank-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.pagerank-subtitle {
+    opacity: 0.9;
+    font-size: 0.9rem;
+    margin: 0.25rem 0 0 0;
+}
+
+.domain-score {
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1.1rem;
+   
+}
+
+.pagerank-content {
+    padding: 2rem;
+}
+
+.score-section {
+    margin-bottom: 2rem;
+}
+
+.score-display {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.score-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.circle-progress {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--color) calc(var(--progress) * 1%),
+        #f1f5f9 0%
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.circle-progress::before {
+    content: '';
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    background: white;
+    border-radius: 50%;
+}
+
+.score-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1f2937;
+    position: relative;
+    z-index: 1;
+}
+
+.score-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    position: relative;
+    z-index: 1;
+}
+
+.score-details {
+    flex: 1;
+}
+
+.score-level {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.global-rank {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.rank-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.rank-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1f2937;
+}
+
+.progress-section {
+    margin-bottom: 2rem;
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.progress-bar-container {
+    position: relative;
+    height: 12px;
+    margin-bottom: 1rem;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 100%;
+    background: #f1f5f9;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    /* SUPPRIMER la transition qui peut causer des saccades */
+}
+
+.progress-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.indicator-tooltip {
+    position: absolute;
+    top: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.indicator-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #1f2937;
+}
+
+.progress-levels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.level-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.level-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.info-section {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.section-header i {
+    font-size: 1.25rem;
+    color: #667eea;
+}
+
+.section-header h4 {
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.info-text {
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.info-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.info-footer i {
+    color: #667eea;
+}
+
+.pagerank-footer {
+    background: #f8fafc;
+    padding: 1rem 2rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.last-updated {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #718096;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.last-updated i {
+    font-size: 0.8rem;
+}
+
+.loading-state {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem 0;
+}
+
+.loading-spinner {
+    flex-shrink: 0;
+}
+
+.loading-content {
+    flex: 1;
+}
+
+.loading-content h4 {
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.loading-content p {
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .pagerank-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .score-display {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .loading-state {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .pagerank-content {
+        padding: 1.5rem;
+    }
+}
+
+/* SUPPRIMER TOUTES LES ANIMATIONS LOURDES */
+/* 
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pagerank-card {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.score-section {
+    animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.progress-section {
+    animation: fadeIn 0.6s ease-out 0.3s both;
+}
+
+.info-section {
+    animation: fadeIn 0.6s ease-out 0.4s both;
+}
+*/
+
+
+
+
+
+/* Toast Notifications - Modern Professional Design */
+.custom-toast {
+    background: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 
+                0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 12px;
+    overflow: hidden;
+    position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.toast-content {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+}
+
+.toast-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-top: 1px;
+}
+
+.toast-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-title {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.3;
+    color:rgb(255, 255, 255);
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+}
+
+.toast-message {
+    font-size: 13px;
+    line-height: 1.4;
+    color: #ffffff;
+    word-wrap: break-word;
+    font-weight: 400;
+}
+
+.toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 6px;
+    color: #999;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    color: #ffffff;
+}
+
+.toast-close:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #666;
+    opacity: 1;
+}
+
+/* Progress Bar Animation */
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    transform-origin: left;
+    animation: toastProgress 5s linear forwards;
+}
+
+.custom-toast.bg-success .toast-progress {
+    background: linear-gradient(90deg, #10B981, #059669);
+}
+
+.custom-toast.bg-danger .toast-progress {
+    background: linear-gradient(90deg, #EF4444, #DC2626);
+}
+
+.custom-toast.bg-warning .toast-progress {
+    background: linear-gradient(90deg, #F59E0B, #D97706);
+}
+
+.custom-toast.bg-info .toast-progress {
+    background: linear-gradient(90deg, #3B82F6, #2563EB);
+}
+
+@keyframes toastProgress {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+/* Color Variants with Subtle Backgrounds */
+.custom-toast.bg-success {
+    background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 30%);
+    border-left: 4px solid #10B981;
+}
+
+.custom-toast.bg-success .toast-icon {
+    color: #10B981;
+}
+
+.custom-toast.bg-danger {
+    background: linear-gradient(135deg, #FEF2F2 0%, #FFFFFF 30%);
+    border-left: 4px solid #EF4444;
+}
+
+.custom-toast.bg-danger .toast-icon {
+    color: #EF4444;
+}
+
+.custom-toast.bg-warning {
+    background: linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 30%);
+    border-left: 4px solid #F59E0B;
+}
+
+.custom-toast.bg-warning .toast-icon {
+    color: #F59E0B;
+}
+
+.custom-toast.bg-info {
+    background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 30%);
+    border-left: 4px solid #3B82F6;
+}
+
+.custom-toast.bg-info .toast-icon {
+    color: #3B82F6;
+}
+
+/* Smooth Entrance Animations */
+.custom-toast.show {
+    animation: toastSlideIn 0.4s cubic-bezier(0.21, 1.02, 0.73, 1);
+}
+
+.custom-toast.hiding {
+    animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(100%) scale(0.9);
+    }
+    60% {
+        opacity: 1;
+        transform: translateX(-8px) scale(1);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes toastSlideOut {
+    0% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(100%) scale(0.9);
+    }
+}
+
+/* Hover Effects */
+.custom-toast:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 
+                0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .toast-content {
+        padding: 14px 16px;
+        gap: 10px;
+    }
+    
+    .toast-title {
+        font-size: 15px;
+    }
+    
+    .toast-message {
+        font-size: 14px;
+    }
+    
+    .custom-toast {
+        margin: 0 12px 12px 12px;
+        border-radius: 10px;
+        color: #ffffff;
+    }
+}
+
+/* Toast Container Positioning */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+@media (max-width: 768px) {
+    .toast-container {
+        top: 16px;
+        right: 16px;
+        left: 16px;
+        min-width: auto;
+        max-width: none;
+    }
+}
+
+.custom-toast.bg-success {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    border-left: 4px solid #10B981;
+}
+
+.custom-toast.bg-danger {
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%) !important;
+    border-left: 4px solid #EF4444;
+}
+
+.custom-toast.bg-warning {
+    background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+    border-left: 4px solid #F59E0B;
+}
+
+.custom-toast.bg-info {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+    border-left: 4px solid #3B82F6;
+}
+</style>
 <div class="container mt-5">
 
 
@@ -391,404 +1050,7 @@
     @endif
 </div>
 
-<style>
-.pagerank-card {
-    background-color: #ffffff;
-    border-radius: 20px;
-    box-shadow: 
-        0 10px 40px rgba(0, 0, 0, 0.08),
-        0 2px 10px rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
 
-.pagerank-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.12),
-        0 4px 20px rgba(0, 0, 0, 0.06);
-}
-
-.pagerank-header {
-    color: white;
-    padding: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    position: relative;
-    overflow: hidden;
-}
-
-.pagerank-header::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 200px;
-    height: 200px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-}
-
-.header-content {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.header-icon {
-    font-size: 2.5rem;
-    opacity: 0.9;
-}
-
-.pagerank-title {
-    font-weight: 700;
-    font-size: 1.5rem;
-    margin: 0;
-}
-
-.pagerank-subtitle {
-    opacity: 0.9;
-    font-size: 0.9rem;
-    margin: 0.25rem 0 0 0;
-}
-
-.domain-score {
-    padding: 0.75rem 1.5rem;
-    border-radius: 25px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    backdrop-filter: blur(10px);
-}
-
-.pagerank-content {
-    padding: 2rem;
-}
-
-.score-section {
-    margin-bottom: 2rem;
-}
-
-.score-display {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-}
-
-.score-circle {
-    position: relative;
-    width: 120px;
-    height: 120px;
-}
-
-.circle-progress {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: conic-gradient(
-        var(--color) calc(var(--progress) * 1%),
-        #f1f5f9 0%
-    );
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.circle-progress::before {
-    content: '';
-    position: absolute;
-    width: 90px;
-    height: 90px;
-    background: white;
-    border-radius: 50%;
-}
-
-.score-number {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #1f2937;
-    position: relative;
-    z-index: 1;
-}
-
-.score-label {
-    font-size: 0.9rem;
-    color: #6b7280;
-    position: relative;
-    z-index: 1;
-}
-
-.score-details {
-    flex: 1;
-}
-
-.score-level {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-}
-
-.global-rank {
-    background: #f8fafc;
-    padding: 1rem;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-}
-
-.rank-label {
-    font-size: 0.9rem;
-    color: #6b7280;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.rank-value {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #1f2937;
-}
-
-.progress-section {
-    margin-bottom: 2rem;
-}
-
-.progress-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    font-size: 0.85rem;
-    color: #6b7280;
-    font-weight: 500;
-}
-
-.progress-bar-container {
-    position: relative;
-    height: 12px;
-    margin-bottom: 1rem;
-}
-
-.progress-bar-bg {
-    width: 100%;
-    height: 100%;
-    background: #f1f5f9;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.progress-bar-fill {
-    height: 100%;
-    border-radius: 10px;
-    transition: width 1s ease-in-out;
-}
-
-.progress-indicator {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 3px solid white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.indicator-tooltip {
-    position: absolute;
-    top: -35px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1f2937;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.indicator-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 4px solid transparent;
-    border-top-color: #1f2937;
-}
-
-.progress-levels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 1rem;
-}
-
-.level-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    color: #6b7280;
-    font-weight: 500;
-}
-
-.level-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-}
-
-.info-section {
-    background: #f8fafc;
-    border-radius: 16px;
-    padding: 1.5rem;
-    border: 1px solid #e2e8f0;
-}
-
-.section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.section-header i {
-    font-size: 1.25rem;
-    color: #667eea;
-}
-
-.section-header h4 {
-    font-weight: 600;
-    color: #2d3748;
-    margin: 0;
-    font-size: 1.1rem;
-}
-
-.info-text {
-    color: #6b7280;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-}
-
-.info-footer {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    color: #9ca3af;
-}
-
-.info-footer i {
-    color: #667eea;
-}
-
-.pagerank-footer {
-    background: #f8fafc;
-    padding: 1rem 2rem;
-    border-top: 1px solid #e2e8f0;
-}
-
-.last-updated {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #718096;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.last-updated i {
-    font-size: 0.8rem;
-}
-
-.loading-state {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    padding: 2rem 0;
-}
-
-.loading-spinner {
-    flex-shrink: 0;
-}
-
-.loading-content {
-    flex: 1;
-}
-
-.loading-content h4 {
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.loading-content p {
-    color: #6b7280;
-    margin: 0;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .pagerank-header {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-    }
-    
-    .header-content {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .score-display {
-        flex-direction: column;
-        text-align: center;
-        gap: 1.5rem;
-    }
-    
-    .loading-state {
-        flex-direction: column;
-        text-align: center;
-        gap: 1.5rem;
-    }
-    
-    .pagerank-content {
-        padding: 1.5rem;
-    }
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.pagerank-card {
-    animation: fadeIn 0.6s ease-out;
-}
-
-.score-section {
-    animation: fadeIn 0.6s ease-out 0.2s both;
-}
-
-.progress-section {
-    animation: fadeIn 0.6s ease-out 0.3s both;
-}
-
-.info-section {
-    animation: fadeIn 0.6s ease-out 0.4s both;
-}
-</style>
         <x-whois-card :analysis="$analysis" />
         <x-analysis-summary :analysis="$analysis" />
 
@@ -824,6 +1086,9 @@
 @endsection
 
 <script>
+   
+
+
     document.addEventListener('DOMContentLoaded', function () {
         const analysisEl = document.getElementById('analysis-data');
         const metricsWrapper = document.getElementById('pagespeed-metrics-wrapper');
@@ -926,30 +1191,30 @@
                     const mobileReady = data.mobile_ready && data.mobile_score !== null;
                     
                     if (desktopReady && !window.desktopDisplayed) {
-                        console.log('✅ Données Desktop prêtes !');
-                        window.desktopDisplayed = true;
-                        showNotification('✅ Données Desktop disponibles', 'success');
-                        if (currentStrategy === 'desktop') {
-                            fetchPageSpeed('desktop', false, true);
-                        }
-                    }
+    console.log('✅ Desktop data ready!');
+    window.desktopDisplayed = true;
+    showNotification('✓ Desktop data available', 'success');
+    if (currentStrategy === 'desktop') {
+        fetchPageSpeed('desktop', false, true);
+    }
+}
                     
-                    if (mobileReady && !window.mobileDisplayed) {
-                        console.log('✅ Données Mobile prêtes !');
-                        window.mobileDisplayed = true;
-                        showNotification('✅ Données Mobile disponibles', 'success');
-                    }
-                    
-                    // 🆕 Vérifier PageRank - CORRIGÉ
-                    if (data.page_rank !== null && data.page_rank !== undefined && !window.pageRankDisplayed) {
-                        console.log('✅ PageRank disponible!', data.page_rank);
-                        window.pageRankDisplayed = true;
-                        showNotification('✅ PageRank disponible', 'success');
-                        updatePageRankSection(data.page_rank, data.page_rank_global);
-                    } else if (data.page_rank === null || data.page_rank === undefined) {
-                        everythingReady = false;
-                        console.log('⏳ PageRank en attente...', data.page_rank);
-                    }
+if (mobileReady && !window.mobileDisplayed) {
+    console.log('✅ Mobile analysis completed');
+    window.mobileDisplayed = true;
+    showNotification('Mobile performance data loaded', 'success');
+}
+
+// 🆕 Check PageRank - FIXED
+if (data.page_rank !== null && data.page_rank !== undefined && !window.pageRankDisplayed) {
+    console.log('✅ PageRank analysis complete', data.page_rank);
+    window.pageRankDisplayed = true;
+    showNotification('PageRank data available', 'success');
+    updatePageRankSection(data.page_rank, data.page_rank_global);
+} else if (data.page_rank === null || data.page_rank === undefined) {
+    everythingReady = false;
+    console.log('⏳ PageRank analysis in progress...', data.page_rank);
+}
                     
                     if (!desktopReady || !mobileReady) {
                         everythingReady = false;
@@ -979,27 +1244,43 @@
         function showNotification(message, type = 'info') {
             // Couleurs et icônes selon le type
             const config = {
-                success: { 
-                    bg: 'bg-success', 
-                    icon: '✅',
-                    title: 'Success'
-                },
-                warning: { 
-                    bg: 'bg-warning text-dark', 
-                    icon: '⚠️',
-                    title: 'Attention'
-                },
-                error: { 
-                    bg: 'bg-danger', 
-                    icon: '❌',
-                    title: 'Error'
-                },
-                info: { 
-                    bg: 'bg-info', 
-                    icon: 'ℹ️',
-                    title: 'Information'
-                }
-            };
+    success: { 
+        bg: 'bg-success', 
+        icon: `
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2ZM14.0303 8.03033L9.03033 13.0303C8.73744 13.3232 8.26256 13.3232 7.96967 13.0303L5.96967 11.0303C5.67678 10.7374 5.67678 10.2626 5.96967 9.96967C6.26256 9.67678 6.73744 9.67678 7.03033 9.96967L8.5 11.4393L12.9697 6.96967C13.2626 6.67678 13.7374 6.67678 14.0303 6.96967C14.3232 7.26256 14.3232 7.73744 14.0303 8.03033Z"/>
+            </svg>
+        `,
+        title: 'Success'
+    },
+    warning: { 
+        bg: 'bg-warning text-dark', 
+        icon: `
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2ZM10 6C10.5523 6 11 6.44772 11 7V11C11 11.5523 10.5523 12 10 12C9.44772 12 9 11.5523 9 11V7C9 6.44772 9.44772 6 10 6ZM10 16C9.44772 16 9 15.5523 9 15C9 14.4477 9.44772 14 10 14C10.5523 14 11 14.4477 11 15C11 15.5523 10.5523 16 10 16Z"/>
+            </svg>
+        `,
+        title: 'Warning'
+    },
+    error: { 
+        bg: 'bg-danger', 
+        icon: `
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2ZM13.5303 6.46967C13.8232 6.76256 13.8232 7.23744 13.5303 7.53033L11.0607 10L13.5303 12.4697C13.8232 12.7626 13.8232 13.2374 13.5303 13.5303C13.2374 13.8232 12.7626 13.8232 12.4697 13.5303L10 11.0607L7.53033 13.5303C7.23744 13.8232 6.76256 13.8232 6.46967 13.5303C6.17678 13.2374 6.17678 12.7626 6.46967 12.4697L8.93934 10L6.46967 7.53033C6.17678 7.23744 6.17678 6.76256 6.46967 6.46967C6.76256 6.17678 7.23744 6.17678 7.53033 6.46967L10 8.93934L12.4697 6.46967C12.7626 6.17678 13.2374 6.17678 13.5303 6.46967Z"/>
+            </svg>
+        `,
+        title: 'Error'
+    },
+    info: { 
+        bg: 'bg-info', 
+        icon: `
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2ZM10 6C10.5523 6 11 6.44772 11 7C11 7.55228 10.5523 8 10 8C9.44772 8 9 7.55228 9 7C9 6.44772 9.44772 6 10 6ZM10 16C9.44772 16 9 15.5523 9 15V11C9 10.4477 9.44772 10 10 10C10.5523 10 11 10.4477 11 11V15C11 15.5523 10.5523 16 10 16Z"/>
+            </svg>
+        `,
+        title: 'Information'
+    }
+};
 
             const { bg, icon, title } = config[type] || config.info;
 
@@ -1016,17 +1297,22 @@
             const toastId = 'toast-' + Date.now();
             
             const toastHTML = `
-                <div id="${toastId}" class="toast ${bg}" role="alert">
-                    <div class="toast-header">
-                        <strong class="me-auto">${icon} ${title}</strong>
-                        <small>à l'instant</small>
-                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-                    </div>
-                    <div class="toast-body">
-                        ${message}
-                    </div>
-                </div>
-            `;
+    <div id="${toastId}" class="custom-toast ${bg}" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-content">
+            <div class="toast-icon">${icon}</div>
+            <div class="toast-body">
+                <div class="toast-title">${title}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button type="button" class="toast-close" data-bs-dismiss="toast" aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        <div class="toast-progress"></div>
+    </div>
+`;
 
             toastContainer.insertAdjacentHTML('beforeend', toastHTML);
             
@@ -1530,4 +1816,29 @@
             startWatching();
         }, 2000);
     });
+
+
+
+
+    // ... Votre code JavaScript existant ...
+
+// ✅ OPTIMISATION SCROLL - À METTRE À LA FIN
+document.addEventListener('DOMContentLoaded', function() {
+    let isScrolling;
+    
+    window.addEventListener('scroll', function() {
+        // Désactiver les animations pendant le scroll
+        document.documentElement.classList.add('no-scroll-animations');
+        
+        // Clear le timeout existant
+        clearTimeout(isScrolling);
+        
+        // Réactiver les animations après l'arrêt du scroll
+        isScrolling = setTimeout(function() {
+            document.documentElement.classList.remove('no-scroll-animations');
+        }, 66); // ~16ms * 4 = 66ms pour meilleure performance
+    }, { passive: true }); // ✅ Améliore les performances
+});
+
+console.log('✅ Scroll optimization loaded');
 </script>
