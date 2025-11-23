@@ -134,7 +134,7 @@
                         <div class="info-section">
                             <div class="section-header">
                             <i class="bi bi-type-h1"></i>
-                                <h4>Page Title</h4>
+                                <h4>Title</h4>
                             </div>
                             <div class="section-content">
                                 <p class="text-content">{{ $analysis->page_title }}</p>

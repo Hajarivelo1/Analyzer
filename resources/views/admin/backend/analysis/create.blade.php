@@ -104,7 +104,7 @@
                     <!-- URL Input -->
                     <div id="url-input-container" class="url-input-section" style="display: none;">
                         <label class="form-label">URL to Analyze</label>
-                        <input type="url" id="analysis-url" class="form-input" 
+                        <input type="url" id="analysis-url" class="form-input w-100" 
                                placeholder="Enter URL to analyze">
                     </div>
 
@@ -211,6 +211,11 @@
 </div>
 
 <style>
+    .project-card.selected .text-truncate,
+.project-card.selected small,
+.project-card.selected .badge {
+    color: white !important;
+}
 /* Styles pour le nouveau design professionnel */
 .project-header-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
