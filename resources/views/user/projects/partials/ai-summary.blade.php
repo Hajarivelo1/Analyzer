@@ -211,19 +211,63 @@
                             </div>
                         </div>
 
-                        <div class="checklist-items">
-                            @foreach($ai['checklist'] as $index => $task)
-                                <div class="checklist-item">
-                                    <input type="checkbox" class="checklist-checkbox" id="task-{{ $index }}">
-                                    <label for="task-{{ $index }}" class="checklist-label">
-                                        <span class="checklist-text">{{ $task }}</span>
-                                        <span class="checklist-toggle">
-                                            <i class="bi bi-check-lg"></i>
-                                        </span>
-                                    </label>
-                                </div>
-                            @endforeach
-                        </div>
+                        {{-- Vérifier si c'est une checklist structurée --}}
+                        @php
+                            $hasStructuredChecklist = isset($ai['checklist'][0]['section']) && isset($ai['checklist'][0]['item']);
+                        @endphp
+
+                        @if($hasStructuredChecklist)
+                            {{-- Checklist Structurée --}}
+                            <div class="structured-checklist">
+                                @php
+                                    // Grouper par section
+                                    $groupedChecklist = [];
+                                    foreach ($ai['checklist'] as $item) {
+                                        if (isset($item['section']) && isset($item['item'])) {
+                                            $groupedChecklist[$item['section']][] = $item;
+                                        }
+                                    }
+                                @endphp
+
+                                @foreach($groupedChecklist as $sectionTitle => $items)
+                                    <div class="checklist-section-group mb-4">
+                                        <div class="section-header-checklist">
+                                            <h6 class="fw-bold text-primary mb-2">{{ $sectionTitle }}</h6>
+                                        </div>
+                                        <div class="checklist-items">
+                                            @foreach($items as $index => $item)
+                                                <div class="checklist-item">
+                                                    <input type="checkbox" class="checklist-checkbox" id="task-{{ md5($sectionTitle) }}-{{ $index }}">
+                                                    <label for="task-{{ md5($sectionTitle) }}-{{ $index }}" class="checklist-label">
+                                                        <span class="checklist-text">{{ $item['item'] }}</span>
+                                                        <span class="checklist-toggle">
+                                                            <i class="bi bi-check-lg"></i>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            {{-- Checklist Simple --}}
+                            <div class="checklist-items">
+                                @foreach($ai['checklist'] as $index => $task)
+                                    @if(is_string($task))
+                                        <div class="checklist-item">
+                                            <input type="checkbox" class="checklist-checkbox" id="task-{{ $index }}">
+                                            <label for="task-{{ $index }}" class="checklist-label">
+                                                <span class="checklist-text">{{ $task }}</span>
+                                                <span class="checklist-toggle">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 @endif
             @endif
@@ -525,6 +569,31 @@
     background: #3b82f6;
     border-color: #3b82f6;
     color: white;
+}
+
+/* Checklist Structurée */
+.structured-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.checklist-section-group {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.section-header-checklist {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.section-header-checklist h6 {
+    color: #374151;
+    font-size: 1.1rem;
 }
 
 /* Markdown Content */

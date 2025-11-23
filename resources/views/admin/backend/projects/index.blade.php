@@ -5,7 +5,123 @@
 
 <link rel="stylesheet" href="{{ asset('css/projects.css?v=' . filemtime(public_path('css/projects.css'))) }}">
 
+<style>
+.glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
 
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin: 2rem 0;
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 1;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-icon {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.step-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-align: center;
+}
+
+.step.active .step-text {
+    color: #007bff;
+}
+
+.progress-container {
+    position: relative;
+}
+
+.progress {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+.progress-percentage {
+    position: absolute;
+    right: 0;
+    top: -25px;
+    font-weight: 600;
+    color: #007bff;
+}
+
+.time-estimate {
+    margin-top: 1rem;
+}
+
+/* Animation du spinner */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .progress-steps::before {
+        left: 5%;
+        right: 5%;
+    }
+    
+    .step-text {
+        font-size: 0.7rem;
+    }
+}
+</style>
 
 <div class="container-fluid py-4">
     <!-- Header Principal -->
@@ -93,10 +209,13 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="#">
-                                    <i class="bi bi-graph-up"></i>
-                                    Analytics
-                                </a>
+                            <a class="dropdown-item start-analysis-btn" href="#" 
+           data-project-id="{{ $project->id }}" 
+           data-project-url="{{ $project->base_url }}"
+           data-project-name="{{ $project->name }}">
+            <i class="bi bi-graph-up"></i>
+            Analyze
+        </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
@@ -219,6 +338,61 @@
     <div class="projects-pagination-container">
         {{ $projects->links('vendor.pagination.custom') }}
     </div>
+
+    {{-- Modal de Loading pour l'analyse --}}
+<div class="modal fade" id="analysisLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 overflow-hidden">
+            <div class="modal-body text-center p-5">
+                <div class="spinner-border text-primary mb-4" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                
+                <h4 class="text-dark fw-bold mb-3">SEO Analysis in Progress</h4>
+                <p class="text-gray-300 mb-4">We're analyzing your website's performance. This may take 1-2 minutes.</p>
+                
+                <div class="progress-steps mb-4">
+                    <div class="step active" data-step="1">
+                        <span class="step-icon">🔍</span>
+                        <span class="step-text">Scanning Website</span>
+                    </div>
+                    <div class="step" data-step="2">
+                        <span class="step-icon">⚡</span>
+                        <span class="step-text">Performance Audit</span>
+                    </div>
+                    <div class="step" data-step="3">
+                        <span class="step-icon">📊</span>
+                        <span class="step-text">Generating Report</span>
+                    </div>
+                </div>
+                
+                <div class="progress-container mb-3">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted progress-percentage">0%</small>
+                </div>
+                
+                <div class="time-estimate">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Estimated time: <span id="timeRemaining">1-2 minutes</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Formulaire caché pour lancer l'analyse --}}
+<form id="analysisForm" action="{{ route('analysis.run') }}" method="POST" style="display: none;">
+    @csrf
+    <input type="hidden" name="project_id" id="analysisProjectId">
+    <input type="hidden" name="base_url" id="analysisBaseUrl">
+    <input type="hidden" name="name" id="analysisProjectName">
+</form>
+
+
 </div>
 
 <!-- Chargement de SweetAlert2 depuis CDN -->
@@ -240,7 +414,79 @@
 <!-- Chargement de notre JS optimisé -->
 <script src="{{ asset('js/projects.js?v=' . filemtime(public_path('js/projects.js'))) }}"></script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const analysisModal = new bootstrap.Modal(document.getElementById('analysisLoadingModal'));
+    const analysisForm = document.getElementById('analysisForm');
+    let analysisInterval;
 
+    // Gestion du clic sur "Analytics"
+    document.querySelectorAll('.start-analysis-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const projectId = this.dataset.projectId;
+            const projectUrl = this.dataset.projectUrl;
+            const projectName = this.dataset.projectName;
+            
+            // Remplir le formulaire
+            document.getElementById('analysisProjectId').value = projectId;
+            document.getElementById('analysisBaseUrl').value = projectUrl;
+            document.getElementById('analysisProjectName').value = projectName;
+            
+            // Afficher le modal
+            analysisModal.show();
+            
+            // Démarrer l'animation de progression
+            startProgressAnimation();
+            
+            // Soumettre le formulaire après un court délai
+            setTimeout(() => {
+                analysisForm.submit();
+            }, 1500);
+        });
+    });
+
+    function startProgressAnimation() {
+        const progressBar = document.querySelector('.progress-bar');
+        const progressPercentage = document.querySelector('.progress-percentage');
+        const steps = document.querySelectorAll('.step');
+        let progress = 0;
+        
+        // Réinitialiser
+        progressBar.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        steps.forEach(step => step.classList.remove('active'));
+        steps[0].classList.add('active');
+        
+        clearInterval(analysisInterval);
+        
+        analysisInterval = setInterval(() => {
+            if (progress < 90) { // S'arrête à 90% pour laisser la place au vrai chargement
+                progress += Math.random() * 10 + 5; // Progression aléatoire entre 5% et 15%
+                progress = Math.min(progress, 90);
+                
+                progressBar.style.width = progress + '%';
+                progressPercentage.textContent = Math.round(progress) + '%';
+                
+                // Mettre à jour les étapes
+                if (progress >= 30 && progress < 60) {
+                    steps.forEach(step => step.classList.remove('active'));
+                    steps[1].classList.add('active');
+                } else if (progress >= 60) {
+                    steps.forEach(step => step.classList.remove('active'));
+                    steps[2].classList.add('active');
+                }
+            }
+        }, 800);
+    }
+
+    // Arrêter l'animation quand le modal se ferme
+    document.getElementById('analysisLoadingModal').addEventListener('hidden.bs.modal', function() {
+        clearInterval(analysisInterval);
+    });
+});
+</script>
 
 
 @endsection

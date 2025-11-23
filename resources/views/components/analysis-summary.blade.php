@@ -361,10 +361,12 @@
     position: relative;
     z-index: 1;
 }
-
+.scrore-progress .score-label{
+    color:rgb(119, 39, 211) !important;
+}
 .score-label {
     font-size: 0.8rem;
-    color: #718096;
+    color:rgb(27, 84, 168) !important;
     position: relative;
     z-index: 1;
 }

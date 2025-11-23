@@ -164,9 +164,17 @@
                         <h3>Heading Structure</h3>
                     </div>
 
-                    @if(!empty($analysis->headings) && is_array($analysis->headings))
+                    @php
+                        $headings = $analysis->headings ?? [];
+                        if (is_string($headings)) {
+                            $headings = json_decode($headings, true) ?? [];
+                        }
+                        $headings = is_array($headings) ? $headings : [];
+                    @endphp
+
+                    @if(!empty($headings))
                         <div class="headings-container">
-                            @foreach($analysis->headings as $heading)
+                            @foreach($headings as $heading)
                                 @if(is_array($heading))
                                     <div class="heading-item heading-{{ strtolower($heading['tag'] ?? 'unknown') }}">
                                         <div class="heading-tag">
@@ -206,9 +214,17 @@
                         <h3>Image Analysis</h3>
                     </div>
 
-                    @if(!empty($analysis->images_data) && is_array($analysis->images_data))
+                    @php
+                        $images = $analysis->images_data ?? [];
+                        if (is_string($images)) {
+                            $images = json_decode($images, true) ?? [];
+                        }
+                        $images = is_array($images) ? $images : [];
+                    @endphp
+
+                    @if(!empty($images))
                         <div class="images-grid">
-                            @foreach($analysis->images_data as $index => $img)
+                            @foreach($images as $index => $img)
                                 <div class="image-card">
                                     <div class="image-header">
                                         <i class="bi bi-file-image"></i>
@@ -260,26 +276,36 @@
                         <h3>Keyword Analysis</h3>
                     </div>
 
-                    @if(!empty($analysis->keywords) && is_array($analysis->keywords) && count($analysis->keywords) > 0)
+                    @php
+                        $keywords = $analysis->keywords ?? [];
+                        if (is_string($keywords)) {
+                            $keywords = json_decode($keywords, true) ?? [];
+                        }
+                        $keywords = is_array($keywords) ? $keywords : [];
+                        $hasKeywords = !empty($keywords) && count($keywords) > 0;
+                        $maxKeywordCount = $hasKeywords ? max($keywords) : 0;
+                    @endphp
+
+                    @if($hasKeywords)
                         <div class="keywords-container">
                             <div class="keywords-stats">
                                 <div class="stat-item">
-                                    <span class="stat-value">{{ count($analysis->keywords) }}</span>
+                                    <span class="stat-value">{{ count($keywords) }}</span>
                                     <span class="stat-label">Unique Keywords</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-value">{{ array_sum($analysis->keywords) }}</span>
+                                    <span class="stat-value">{{ array_sum($keywords) }}</span>
                                     <span class="stat-label">Total Occurrences</span>
                                 </div>
                             </div>
                             
                             <div class="keywords-list">
-                                @foreach($analysis->keywords as $word => $count)
+                                @foreach($keywords as $word => $count)
                                     <div class="keyword-item">
                                         <span class="keyword-text">{{ $word }}</span>
                                         <span class="keyword-count">{{ $count }}</span>
                                         <div class="keyword-bar">
-                                            <div class="bar-fill" style="width: {{ min(100, ($count / max($analysis->keywords)) * 100) }}%"></div>
+                                            <div class="bar-fill" style="width: {{ $maxKeywordCount > 0 ? min(100, ($count / $maxKeywordCount) * 100) : 0 }}%"></div>
                                         </div>
                                     </div>
                                 @endforeach
@@ -305,6 +331,9 @@
 
                     @php
                         $audit = $analysis->technical_audit ?? [];
+                        if (is_string($audit)) {
+                            $audit = json_decode($audit, true) ?? [];
+                        }
                         $isAuditAvailable = is_array($audit) && !empty($audit);
                     @endphp
 
@@ -567,326 +596,325 @@
             </div>
 
             <!-- Structural Audit -->
-            <!-- Structural Audit -->
-<div class="tab-pane fade" id="audit-structure" role="tabpanel">
-    <div class="analysis-card">
-        <div class="card-header-section">
-            <i class="bi bi-diagram-3"></i>
-            <h3>Structural Audit</h3>
-        </div>
-        
-        @php
-            $headingsData = $analysis->headings ?? [];
-            if (is_string($headingsData)) {
-                $headingsData = json_decode($headingsData, true);
-            }
-            $headings = is_array($headingsData) ? $headingsData : [];
-            $total = count($headings);
-            
-            $h1Count = 0;
-            $h2Count = 0;
-            $h3Count = 0;
-            $h4PlusCount = 0;
-            $hasH1 = false;
-            
-            $validHeadings = [];
-            
-            foreach ($headings as $index => $h) {
-                if (is_array($h)) {
-                    $tag = strtolower($h['tag'] ?? '');
-                    $text = $h['text'] ?? 'N/A';
-                    
-                    $level = 0;
-                    switch($tag) {
-                        case 'h1': $level = 1; $h1Count++; $hasH1 = true; break;
-                        case 'h2': $level = 2; $h2Count++; break;
-                        case 'h3': $level = 3; $h3Count++; break;
-                        case 'h4': $level = 4; $h4PlusCount++; break;
-                        case 'h5': $level = 5; $h4PlusCount++; break;
-                        case 'h6': $level = 6; $h4PlusCount++; break;
-                        default: $level = 0;
-                    }
-                    
-                    $baseDepth = match($level) {
-                        1 => rand(8, 15),
-                        2 => rand(5, 12),
-                        3 => rand(3, 8),
-                        4 => rand(2, 6),
-                        default => rand(1, 4)
-                    };
-                    
-                    $textLength = strlen($text);
-                    if ($textLength > 100) $baseDepth += 2;
-                    elseif ($textLength > 50) $baseDepth += 1;
-                    
-                    if ($index < 3) $baseDepth += 2;
-                    elseif ($index < 6) $baseDepth += 1;
-                    
-                    $domDepth = max(1, min(25, $baseDepth));
-                    
-                    $validHeadings[] = [
-                        'tag' => $tag,
-                        'text' => $text,
-                        'level' => $level,
-                        'dom_depth' => $domDepth,
-                        'length' => $textLength
-                    ];
-                }
-            }
-            
-            $avgDepth = $total > 0 ? round(array_sum(array_column($validHeadings, 'dom_depth')) / $total, 1) : 0;
-            $maxDepth = $total > 0 ? max(array_column($validHeadings, 'dom_depth')) : 0;
-            $minDepth = $total > 0 ? min(array_column($validHeadings, 'dom_depth')) : 0;
-        @endphp
-
-        @if($total > 0)
-            <!-- Alertes Structure -->
-            @if(!$hasH1)
-                <div class="alert-card error">
-                    <div class="alert-icon">
-                        <i class="bi bi-exclamation-triangle"></i>
+            <div class="tab-pane fade" id="audit-structure" role="tabpanel">
+                <div class="analysis-card">
+                    <div class="card-header-section">
+                        <i class="bi bi-diagram-3"></i>
+                        <h3>Structural Audit</h3>
                     </div>
-                    <div class="alert-content">
-                        <h5>Missing H1 Tag</h5>
-                        <p>No &lt;h1&gt; detected — the semantic structure is incomplete.</p>
-                    </div>
-                </div>
-            @elseif($h1Count > 1)
-                <div class="alert-card warning">
-                    <div class="alert-icon">
-                        <i class="bi bi-exclamation-triangle"></i>
-                    </div>
-                    <div class="alert-content">
-                        <h5>Multiple H1 Tags</h5>
-                        <p>Multiple &lt;h1&gt; tags detected ({{ $h1Count }}) — only one H1 should be used per page.</p>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Statistiques -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">{{ $h1Count }}</div>
-                    <div class="stat-label">H1 Tags</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{{ $h2Count }}</div>
-                    <div class="stat-label">H2 Tags</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{{ $h3Count }}</div>
-                    <div class="stat-label">H3 Tags</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{{ $h4PlusCount }}</div>
-                    <div class="stat-label">H4+ Tags</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">{{ $total }}</div>
-                    <div class="stat-label">Total Headings</div>
-                </div>
-            </div>
-
-            <!-- Tableau des Headings -->
-            <div class="table-container">
-                <table class="audit-table">
-                    <thead>
-                        <tr>
-                            <th>Tag</th>
-                            <th>DOM Depth</th>
-                            <th>Text Content</th>
-                            <th>Length</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($validHeadings as $heading)
-                            @php
-                                $tag = $heading['tag'] ?? '';
-                                $text = $heading['text'] ?? 'N/A';
-                                $level = $heading['level'] ?? 0;
-                                $domDepth = $heading['dom_depth'] ?? 0;
-                                $length = $heading['length'] ?? 0;
+                    
+                    @php
+                        $headingsData = $analysis->headings ?? [];
+                        if (is_string($headingsData)) {
+                            $headingsData = json_decode($headingsData, true) ?? [];
+                        }
+                        $headings = is_array($headingsData) ? $headingsData : [];
+                        $total = count($headings);
+                        
+                        $h1Count = 0;
+                        $h2Count = 0;
+                        $h3Count = 0;
+                        $h4PlusCount = 0;
+                        $hasH1 = false;
+                        
+                        $validHeadings = [];
+                        
+                        foreach ($headings as $index => $h) {
+                            if (is_array($h)) {
+                                $tag = strtolower($h['tag'] ?? '');
+                                $text = $h['text'] ?? 'N/A';
                                 
-                                $depthClass = match(true) {
-                                    $domDepth <= 5 => 'depth-low',
-                                    $domDepth <= 10 => 'depth-medium',
-                                    $domDepth <= 15 => 'depth-high',
-                                    default => 'depth-very-high'
+                                $level = 0;
+                                switch($tag) {
+                                    case 'h1': $level = 1; $h1Count++; $hasH1 = true; break;
+                                    case 'h2': $level = 2; $h2Count++; break;
+                                    case 'h3': $level = 3; $h3Count++; break;
+                                    case 'h4': $level = 4; $h4PlusCount++; break;
+                                    case 'h5': $level = 5; $h4PlusCount++; break;
+                                    case 'h6': $level = 6; $h4PlusCount++; break;
+                                    default: $level = 0;
+                                }
+                                
+                                $baseDepth = match($level) {
+                                    1 => rand(8, 15),
+                                    2 => rand(5, 12),
+                                    3 => rand(3, 8),
+                                    4 => rand(2, 6),
+                                    default => rand(1, 4)
                                 };
                                 
-                                $badgeClass = match($level) {
-                                    1 => 'badge-h1',
-                                    2 => 'badge-h2',
-                                    3 => 'badge-h3',
-                                    4 => 'badge-h4',
-                                    5 => 'badge-h5',
-                                    6 => 'badge-h6',
-                                    default => 'badge-unknown'
-                                };
-                            @endphp
-                            <tr>
-                                <td>
-                                    <span class="heading-badge {{ $badgeClass }}">
-                                        {{ strtoupper($tag) }}
-                                    </span>
-                                </td>
-                                <td class="depth-cell {{ $depthClass }}">
-                                    <div class="depth-value">{{ $domDepth }}</div>
-                                    <div class="depth-bar">
-                                        <div class="depth-fill" style="width: {{ min(100, ($domDepth / 25) * 100) }}%"></div>
-                                    </div>
-                                </td>
-                                <td class="text-cell" title="{{ $text }}">
-                                    {{ \Illuminate\Support\Str::limit($text, 70) }}
-                                </td>
-                                <td class="length-cell">{{ $length }} chars</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                                $textLength = strlen($text);
+                                if ($textLength > 100) $baseDepth += 2;
+                                elseif ($textLength > 50) $baseDepth += 1;
+                                
+                                if ($index < 3) $baseDepth += 2;
+                                elseif ($index < 6) $baseDepth += 1;
+                                
+                                $domDepth = max(1, min(25, $baseDepth));
+                                
+                                $validHeadings[] = [
+                                    'tag' => $tag,
+                                    'text' => $text,
+                                    'level' => $level,
+                                    'dom_depth' => $domDepth,
+                                    'length' => $textLength
+                                ];
+                            }
+                        }
+                        
+                        $avgDepth = $total > 0 ? round(array_sum(array_column($validHeadings, 'dom_depth')) / $total, 1) : 0;
+                        $maxDepth = $total > 0 ? max(array_column($validHeadings, 'dom_depth')) : 0;
+                        $minDepth = $total > 0 ? min(array_column($validHeadings, 'dom_depth')) : 0;
+                    @endphp
 
-            <!-- Visualisation Hiérarchique -->
-            <div class="visualization-card">
-                <div class="card-header-section">
-                    <i class="bi bi-diagram-3"></i>
-                    <h4>Hierarchical Structure</h4>
-                </div>
-                <div class="hierarchy-container">
-                    @foreach($validHeadings as $heading)
-                        @php
-                            $tag = $heading['tag'] ?? '';
-                            $text = $heading['text'] ?? 'N/A';
-                            $level = $heading['level'] ?? 0;
-                            $domDepth = $heading['dom_depth'] ?? 0;
-                        @endphp
-                        @if($level > 0)
-                            <div class="hierarchy-item hierarchy-level-{{ $level }}">
-                                <div class="hierarchy-content">
-                                    <span class="hierarchy-tag">H{{ $level }}</span>
-                                    <span class="hierarchy-text">{{ \Illuminate\Support\Str::limit($text, 50) }}</span>
-                                    <span class="hierarchy-meta">Depth: {{ $domDepth }}</span>
+                    @if($total > 0)
+                        <!-- Alertes Structure -->
+                        @if(!$hasH1)
+                            <div class="alert-card error">
+                                <div class="alert-icon">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <h5>Missing H1 Tag</h5>
+                                    <p>No &lt;h1&gt; detected — the semantic structure is incomplete.</p>
+                                </div>
+                            </div>
+                        @elseif($h1Count > 1)
+                            <div class="alert-card warning">
+                                <div class="alert-icon">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <h5>Multiple H1 Tags</h5>
+                                    <p>Multiple &lt;h1&gt; tags detected ({{ $h1Count }}) — only one H1 should be used per page.</p>
                                 </div>
                             </div>
                         @endif
-                    @endforeach
-                </div>
-            </div>
 
-            <!-- Analyse SEO -->
-            <div class="analysis-section">
-                <div class="card-header-section">
-                    <i class="bi bi-search"></i>
-                    <h4>SEO Analysis</h4>
-                </div>
-                <div class="analysis-points">
-                    <div class="analysis-point {{ $h1Count === 1 ? 'point-success' : 'point-error' }}">
-                        <i class="bi bi-{{ $h1Count === 1 ? 'check' : 'x' }}-circle"></i>
-                        <div>
-                            <strong>H1 Tag:</strong>
-                            @if($h1Count === 1)
-                                Perfect! Only one H1 tag found.
-                            @elseif($h1Count === 0)
-                                No H1 tag found - this hurts SEO.
-                            @else
-                                {{ $h1Count }} H1 tags found - should only have one.
-                            @endif
+                        <!-- Statistiques -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ $h1Count }}</div>
+                                <div class="stat-label">H1 Tags</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ $h2Count }}</div>
+                                <div class="stat-label">H2 Tags</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ $h3Count }}</div>
+                                <div class="stat-label">H3 Tags</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ $h4PlusCount }}</div>
+                                <div class="stat-label">H4+ Tags</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ $total }}</div>
+                                <div class="stat-label">Total Headings</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="analysis-point {{ $h2Count > 0 ? 'point-success' : 'point-info' }}">
-                        <i class="bi bi-{{ $h2Count > 0 ? 'check' : 'info' }}-circle"></i>
-                        <div>
-                            <strong>H2 Tags:</strong>
-                            @if($h2Count > 0)
-                                {{ $h2Count }} H2 tags found - good for structure.
-                            @else
-                                No H2 tags found.
-                            @endif
-                        </div>
-                    </div>
-                    <div class="analysis-point {{ $h3Count > 0 ? 'point-success' : 'point-info' }}">
-                        <i class="bi bi-{{ $h3Count > 0 ? 'check' : 'info' }}-circle"></i>
-                        <div>
-                            <strong>H3 Tags:</strong>
-                            @if($h3Count > 0)
-                                {{ $h3Count }} H3 tags found - good hierarchy.
-                            @else
-                                No H3 tags found.
-                            @endif
-                        </div>
-                    </div>
-                    <div class="analysis-point point-info">
-                        <i class="bi bi-graph-up"></i>
-                        <div>
-                            <strong>Structure Quality:</strong>
-                            @if($h1Count === 1 && $h2Count >= 2 && $total <= 15)
-                                🟢 Excellent
-                            @elseif($h1Count === 1 && $total <= 20)
-                                🟡 Good
-                            @else
-                                🔴 Needs improvement
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Analyse Profondeur DOM -->
-            <div class="analysis-section">
-                <div class="card-header-section">
-                    <i class="bi bi-layers"></i>
-                    <h4>DOM Depth Analysis</h4>
-                </div>
-                <div class="analysis-points">
-                    <div class="analysis-point {{ $avgDepth <= 8 ? 'point-success' : ($avgDepth <= 12 ? 'point-warning' : 'point-error') }}">
-                        <i class="bi bi-{{ $avgDepth <= 8 ? 'check' : ($avgDepth <= 12 ? 'exclamation' : 'x') }}-circle"></i>
-                        <div>
-                            <strong>Average Depth:</strong> {{ $avgDepth }} - 
-                            @if($avgDepth <= 8)
-                                Good, reasonable nesting
-                            @elseif($avgDepth <= 12)
-                                Moderate, could be optimized
-                            @else
-                                High, consider simplifying HTML structure
-                            @endif
+                        <!-- Tableau des Headings -->
+                        <div class="table-container">
+                            <table class="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tag</th>
+                                        <th>DOM Depth</th>
+                                        <th>Text Content</th>
+                                        <th>Length</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($validHeadings as $heading)
+                                        @php
+                                            $tag = $heading['tag'] ?? '';
+                                            $text = $heading['text'] ?? 'N/A';
+                                            $level = $heading['level'] ?? 0;
+                                            $domDepth = $heading['dom_depth'] ?? 0;
+                                            $length = $heading['length'] ?? 0;
+                                            
+                                            $depthClass = match(true) {
+                                                $domDepth <= 5 => 'depth-low',
+                                                $domDepth <= 10 => 'depth-medium',
+                                                $domDepth <= 15 => 'depth-high',
+                                                default => 'depth-very-high'
+                                            };
+                                            
+                                            $badgeClass = match($level) {
+                                                1 => 'badge-h1',
+                                                2 => 'badge-h2',
+                                                3 => 'badge-h3',
+                                                4 => 'badge-h4',
+                                                5 => 'badge-h5',
+                                                6 => 'badge-h6',
+                                                default => 'badge-unknown'
+                                            };
+                                        @endphp
+                                        <tr>
+                                            <td>
+                                                <span class="heading-badge {{ $badgeClass }}">
+                                                    {{ strtoupper($tag) }}
+                                                </span>
+                                            </td>
+                                            <td class="depth-cell {{ $depthClass }}">
+                                                <div class="depth-value">{{ $domDepth }}</div>
+                                                <div class="depth-bar">
+                                                    <div class="depth-fill" style="width: {{ min(100, ($domDepth / 25) * 100) }}%"></div>
+                                                </div>
+                                            </td>
+                                            <td class="text-cell" title="{{ $text }}">
+                                                {{ \Illuminate\Support\Str::limit($text, 70) }}
+                                            </td>
+                                            <td class="length-cell">{{ $length }} chars</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                    <div class="analysis-point {{ $maxDepth <= 15 ? 'point-success' : 'point-warning' }}">
-                        <i class="bi bi-{{ $maxDepth <= 15 ? 'check' : 'exclamation' }}-circle"></i>
-                        <div>
-                            <strong>Max Depth:</strong> {{ $maxDepth }} - 
-                            @if($maxDepth <= 15)
-                                Acceptable maximum nesting
-                            @else
-                                Very deep nesting, may impact performance
-                            @endif
-                        </div>
-                    </div>
-                    <div class="analysis-point point-info">
-                        <i class="bi bi-lightbulb"></i>
-                        <div>
-                            <strong>Recommendation:</strong>
-                            @if($avgDepth <= 8 && $maxDepth <= 12)
-                                🟢 Excellent DOM structure
-                            @elseif($avgDepth <= 10 && $maxDepth <= 15)
-                                🟡 Good, minor optimizations possible
-                            @else
-                                🔴 Consider simplifying HTML structure
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-        @else
-            <div class="empty-state">
-                <i class="bi bi-exclamation-triangle"></i>
-                <h4>No Heading Tags Detected</h4>
-                <p>No heading tags (H1-H6) were found on this page. This can negatively impact SEO.</p>
+                        <!-- Visualisation Hiérarchique -->
+                        <div class="visualization-card">
+                            <div class="card-header-section">
+                                <i class="bi bi-diagram-3"></i>
+                                <h4>Hierarchical Structure</h4>
+                            </div>
+                            <div class="hierarchy-container">
+                                @foreach($validHeadings as $heading)
+                                    @php
+                                        $tag = $heading['tag'] ?? '';
+                                        $text = $heading['text'] ?? 'N/A';
+                                        $level = $heading['level'] ?? 0;
+                                        $domDepth = $heading['dom_depth'] ?? 0;
+                                    @endphp
+                                    @if($level > 0)
+                                        <div class="hierarchy-item hierarchy-level-{{ $level }}">
+                                            <div class="hierarchy-content">
+                                                <span class="hierarchy-tag">H{{ $level }}</span>
+                                                <span class="hierarchy-text">{{ \Illuminate\Support\Str::limit($text, 50) }}</span>
+                                                <span class="hierarchy-meta">Depth: {{ $domDepth }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- Analyse SEO -->
+                        <div class="analysis-section">
+                            <div class="card-header-section">
+                                <i class="bi bi-search"></i>
+                                <h4>SEO Analysis</h4>
+                            </div>
+                            <div class="analysis-points">
+                                <div class="analysis-point {{ $h1Count === 1 ? 'point-success' : 'point-error' }}">
+                                    <i class="bi bi-{{ $h1Count === 1 ? 'check' : 'x' }}-circle"></i>
+                                    <div>
+                                        <strong>H1 Tag:</strong>
+                                        @if($h1Count === 1)
+                                            Perfect! Only one H1 tag found.
+                                        @elseif($h1Count === 0)
+                                            No H1 tag found - this hurts SEO.
+                                        @else
+                                            {{ $h1Count }} H1 tags found - should only have one.
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="analysis-point {{ $h2Count > 0 ? 'point-success' : 'point-info' }}">
+                                    <i class="bi bi-{{ $h2Count > 0 ? 'check' : 'info' }}-circle"></i>
+                                    <div>
+                                        <strong>H2 Tags:</strong>
+                                        @if($h2Count > 0)
+                                            {{ $h2Count }} H2 tags found - good for structure.
+                                        @else
+                                            No H2 tags found.
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="analysis-point {{ $h3Count > 0 ? 'point-success' : 'point-info' }}">
+                                    <i class="bi bi-{{ $h3Count > 0 ? 'check' : 'info' }}-circle"></i>
+                                    <div>
+                                        <strong>H3 Tags:</strong>
+                                        @if($h3Count > 0)
+                                            {{ $h3Count }} H3 tags found - good hierarchy.
+                                        @else
+                                            No H3 tags found.
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="analysis-point point-info">
+                                    <i class="bi bi-graph-up"></i>
+                                    <div>
+                                        <strong>Structure Quality:</strong>
+                                        @if($h1Count === 1 && $h2Count >= 2 && $total <= 15)
+                                            🟢 Excellent
+                                        @elseif($h1Count === 1 && $total <= 20)
+                                            🟡 Good
+                                        @else
+                                            🔴 Needs improvement
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Analyse Profondeur DOM -->
+                        <div class="analysis-section">
+                            <div class="card-header-section">
+                                <i class="bi bi-layers"></i>
+                                <h4>DOM Depth Analysis</h4>
+                            </div>
+                            <div class="analysis-points">
+                                <div class="analysis-point {{ $avgDepth <= 8 ? 'point-success' : ($avgDepth <= 12 ? 'point-warning' : 'point-error') }}">
+                                    <i class="bi bi-{{ $avgDepth <= 8 ? 'check' : ($avgDepth <= 12 ? 'exclamation' : 'x') }}-circle"></i>
+                                    <div>
+                                        <strong>Average Depth:</strong> {{ $avgDepth }} - 
+                                        @if($avgDepth <= 8)
+                                            Good, reasonable nesting
+                                        @elseif($avgDepth <= 12)
+                                            Moderate, could be optimized
+                                        @else
+                                            High, consider simplifying HTML structure
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="analysis-point {{ $maxDepth <= 15 ? 'point-success' : 'point-warning' }}">
+                                    <i class="bi bi-{{ $maxDepth <= 15 ? 'check' : 'exclamation' }}-circle"></i>
+                                    <div>
+                                        <strong>Max Depth:</strong> {{ $maxDepth }} - 
+                                        @if($maxDepth <= 15)
+                                            Acceptable maximum nesting
+                                        @else
+                                            Very deep nesting, may impact performance
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="analysis-point point-info">
+                                    <i class="bi bi-lightbulb"></i>
+                                    <div>
+                                        <strong>Recommendation:</strong>
+                                        @if($avgDepth <= 8 && $maxDepth <= 12)
+                                            🟢 Excellent DOM structure
+                                        @elseif($avgDepth <= 10 && $maxDepth <= 15)
+                                            🟡 Good, minor optimizations possible
+                                        @else
+                                            🔴 Consider simplifying HTML structure
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    @else
+                        <div class="empty-state">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <h4>No Heading Tags Detected</h4>
+                            <p>No heading tags (H1-H6) were found on this page. This can negatively impact SEO.</p>
+                        </div>
+                    @endif
+                </div>
             </div>
-        @endif
-    </div>
-</div>
         </div>
 
     @else
@@ -922,7 +950,7 @@
 </div>
 
 <style>
-/* [Tous vos styles CSS complets] */
+/* [Tous vos styles CSS complets restent identiques] */
 /* Styles pour le design professionnel */
 .project-header-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1865,258 +1893,6 @@
 }
 
 /* Styles pour les niveaux hiérarchiques */
-.hierarchy-level-1 { --level: 1; }
-.hierarchy-level-2 { --level: 2; }
-.hierarchy-level-3 { --level: 3; }
-.hierarchy-level-4 { --level: 4; }
-.hierarchy-level-5 { --level: 5; }
-.hierarchy-level-6 { --level: 6; }
-
-
-/* Structural Audit Styles */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.stat-card {
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-radius: 12px;
-    text-align: center;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card .stat-value {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #667eea;
-    margin-bottom: 0.5rem;
-}
-
-.stat-card .stat-label {
-    font-size: 0.9rem;
-    color: #6b7280;
-    font-weight: 600;
-}
-
-/* Table Styles */
-.table-container {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-    margin-bottom: 2rem;
-}
-
-.audit-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.audit-table th {
-    background: #f8fafc;
-    padding: 1rem 1.25rem;
-    text-align: left;
-    font-weight: 600;
-    color: #374151;
-    border-bottom: 1px solid #e2e8f0;
-    font-size: 0.9rem;
-}
-
-.audit-table td {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: top;
-}
-
-.audit-table tr:last-child td {
-    border-bottom: none;
-}
-
-.audit-table tr:hover td {
-    background: #f8fafc;
-}
-
-/* Heading Badges */
-.heading-badge {
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.75rem;
-    color: white;
-    display: inline-block;
-    text-align: center;
-    min-width: 40px;
-}
-
-.badge-h1 { background: #dc2626; }
-.badge-h2 { background: #ea580c; }
-.badge-h3 { background: #d97706; }
-.badge-h4 { background: #059669; }
-.badge-h5 { background: #0d9488; }
-.badge-h6 { background: #2563eb; }
-.badge-unknown { background: #6b7280; }
-
-/* Depth Styles */
-.depth-cell {
-    min-width: 100px;
-}
-
-.depth-value {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.depth-bar {
-    height: 6px;
-    background: #e5e7eb;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.depth-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 1s ease-in-out;
-}
-
-.depth-low .depth-value { color: #16a34a; }
-.depth-low .depth-fill { background: #16a34a; }
-
-.depth-medium .depth-value { color: #0ea5e9; }
-.depth-medium .depth-fill { background: #0ea5e9; }
-
-.depth-high .depth-value { color: #d97706; }
-.depth-high .depth-fill { background: #d97706; }
-
-.depth-very-high .depth-value { color: #dc2626; }
-.depth-very-high .depth-fill { background: #dc2626; }
-
-.text-cell {
-    max-width: 300px;
-}
-
-.length-cell {
-    color: #6b7280;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-/* Hierarchy Visualization */
-.visualization-card {
-    background: #f8fafc;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.hierarchy-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.hierarchy-item {
-    padding-left: calc((var(--level, 1) - 1) * 2rem);
-    transition: all 0.3s ease;
-}
-
-.hierarchy-content {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-
-.hierarchy-item:hover .hierarchy-content {
-    background: #f1f5f9;
-    transform: translateX(5px);
-}
-
-.hierarchy-tag {
-    background: #667eea;
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    min-width: 35px;
-    text-align: center;
-}
-
-.hierarchy-text {
-    flex: 1;
-    font-weight: 500;
-    color: #1f2937;
-}
-
-.hierarchy-meta {
-    font-size: 0.8rem;
-    color: #6b7280;
-    background: #f1f5f9;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-}
-
-/* Analysis Sections */
-.analysis-section {
-    background: #f8fafc;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.analysis-points {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.analysis-point {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-}
-
-.analysis-point i {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-    margin-top: 0.125rem;
-}
-
-.point-success i { color: #16a34a; }
-.point-error i { color: #dc2626; }
-.point-warning i { color: #d97706; }
-.point-info i { color: #0ea5e9; }
-
-.analysis-point div {
-    flex: 1;
-}
-
-.analysis-point strong {
-    color: #1f2937;
-}
-
-/* Hierarchy Levels */
 .hierarchy-level-1 { --level: 1; }
 .hierarchy-level-2 { --level: 2; }
 .hierarchy-level-3 { --level: 3; }
