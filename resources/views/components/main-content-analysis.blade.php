@@ -396,6 +396,7 @@
     font-size: 0.7rem;
     opacity: 0.9;
     line-height: 1.2;
+    color: #ffffff !important;
 }
 
 /* Statistics Cards - REDUCED FONT SIZES */

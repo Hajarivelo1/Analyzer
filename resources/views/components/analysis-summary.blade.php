@@ -77,11 +77,18 @@
         $keywords = array_slice($keywords, 0, 5, true);
     }
 
-    // ✅ Réseau
+    // ✅ Réseau - ICÔNES PROFESSIONNELLES BOOTSTRAP
     $whois = $analysis->whois_data ?? [];
     $pagerank = $analysis->page_rank ?? null;
-    $cloudflare = $analysis->cloudflare_blocked ? '⚠️ Bloqué' : '✅ Accessible';
-    $ssl = $analysis->https_enabled ? '✅ SSL actif' : '⛔️ SSL désactivé';
+    
+    // 🔥 CORRECTION : Icônes Bootstrap professionnelles
+    $cloudflare = $analysis->cloudflare_blocked 
+        ? '<span class="badge bg-warning text-dark"><i class="bi bi-shield-lock me-1"></i>Protected</span>' 
+        : '<span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>Accessible</span>';
+
+    $ssl = $analysis->https_enabled 
+        ? '<span class="badge bg-success"><i class="bi bi-lock-fill me-1"></i>HTTPS</span>' 
+        : '<span class="badge bg-danger"><i class="bi bi-unlock me-1"></i>HTTP</span>';
     
     // ✅ WHOIS data sécurisée
     $domainName = '';
@@ -233,14 +240,14 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Cloudflare</span>
-                        <span class="info-value status-{{ $analysis->cloudflare_blocked ? 'warning' : 'success' }}">
-                            {{ $cloudflare }}
+                        <span class="info-value">
+                            {!! $cloudflare !!}
                         </span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">SSL</span>
-                        <span class="info-value status-{{ $analysis->https_enabled ? 'success' : 'danger' }}">
-                            {{ $ssl }}
+                        <span class="info-value">
+                            {!! $ssl !!}
                         </span>
                     </div>
                     @if($analysis->page_rank_global)
