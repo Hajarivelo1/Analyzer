@@ -382,35 +382,36 @@
     }
 }
 
-/* SUPPRIMER TOUTES LES ANIMATIONS LOURDES */
-/* 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* Styles pour les boutons de stratégie */
+.btn-strategy {
+    transition: all 0.3s ease;
 }
 
-.pagerank-card {
-    animation: fadeIn 0.6s ease-out;
+.btn-strategy.active {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: white !important;
 }
 
-.score-section {
-    animation: fadeIn 0.6s ease-out 0.2s both;
+.btn-strategy:not(.active) {
+    background-color: transparent;
+    border-color: #6c757d;
+    color: #6c757d;
 }
 
-.progress-section {
-    animation: fadeIn 0.6s ease-out 0.3s both;
+/* Style spécifique pour mobile quand actif */
+.btn-strategy[data-strategy="mobile"].active {
+    background-color: #000 !important;
+    border-color: #000 !important;
+    color: white !important;
 }
 
-.info-section {
-    animation: fadeIn 0.6s ease-out 0.4s both;
+/* Style spécifique pour desktop quand actif */
+.btn-strategy[data-strategy="desktop"].active {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    color: white !important;
 }
-*/
 
 
 
@@ -715,9 +716,9 @@
         <div id="analysis-data" data-analysis-id="{{ $analysis->id }}"></div>
 
         <div class="btn-group mb-3" role="group">
-            <button class="btn btn-outline-primary" data-strategy="desktop">🖥️ Desktop</button>
-            <button class="btn btn-outline-warning" style="color:#000; border: 1px solid #000;" data-strategy="mobile">📱 Mobile</button>
-        </div>
+    <button class="btn btn-strategy active" data-strategy="desktop">🖥️ Desktop</button>
+    <button class="btn btn-strategy" data-strategy="mobile">📱 Mobile</button>
+</div>
 
         <div id="pagespeed-metrics-wrapper"></div>
         <div id="audit-fragments-wrapper"></div>

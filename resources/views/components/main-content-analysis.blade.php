@@ -486,7 +486,7 @@
 .analysis-section {
     background: white;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 12px rgb(0 0 0 / 17%) !important;
     border: 1px solid #e9ecef;
     overflow: hidden;
     transition: all 0.3s ease;

@@ -133,7 +133,7 @@
                     <div class="info-sections">
                         <div class="info-section">
                             <div class="section-header">
-                                <i class="bi bi-type-bold"></i>
+                            <i class="bi bi-type-h1"></i>
                                 <h4>Page Title</h4>
                             </div>
                             <div class="section-content">
@@ -1110,6 +1110,7 @@
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
+    background: rgb(230 237 243 / 80%) !important;
 }
 
 .metric-card {
@@ -1189,6 +1190,7 @@
     padding: 1.5rem;
     border-radius: 15px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgb(179 173 173 / 31%) !important;
 }
 
 .section-header {

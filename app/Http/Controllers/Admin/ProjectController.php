@@ -14,72 +14,91 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class ProjectController extends Controller
 {
     public function AllProjects()
-    {
-        $userId = Auth::id();
-        $page = request('page', 1);
+{
+    $userId = Auth::id();
+    $page = request('page', 1);
+    
+    $cacheKey = "user_projects_data_{$userId}_page_{$page}";
+    
+    $data = Cache::remember($cacheKey, 300, function () use ($userId) {
+        \Log::info('🔄 Chargement FRESH des projets - RELATION CORRIGÉE', ['user_id' => $userId]);
         
-        // 🔥 CLÉ DE CACHE AVEC PAGINATION
-        $cacheKey = "user_projects_data_{$userId}_page_{$page}";
-        
-        // 🔥 OPTIMISATION : Cache pendant 5 minutes seulement pour les tests
-        $data = Cache::remember($cacheKey, 300, function () use ($userId) {
-            \Log::info('🔄 Chargement FRESH des projets', ['user_id' => $userId]);
-            
-            // 🔥 CRITIQUE : Chargement OPTIMISÉ sans les données lourdes
-            $projects = Project::with([
-                'seoAnalyses' => function ($query) {
-                    // ⚡ SEULEMENT les champs nécessaires, pas tout le contenu
-                    $query->select('id', 'project_id', 'score', 'created_at')
-                          ->latest()
-                          ->limit(1); // ⚡ Seulement la dernière analyse
-                }
-            ])
-            ->where('user_id', $userId)
+        // ⚡ CORRECTION : Charger les projets SANS la relation problématique
+        $projects = Project::where('user_id', $userId)
             ->where('is_active', true)
-            ->select('id', 'name', 'base_url', 'target_keywords', 'is_active', 'created_at', 'updated_at') // ⚡ Seulement les champs nécessaires
+            ->select('id', 'name', 'base_url', 'target_keywords', 'is_active', 'created_at', 'updated_at')
             ->latest()
             ->paginate(6);
 
-            // 🔥 OPTIMISATION : Calculs séparés pour éviter de charger toutes les données
-            $allProjects = Project::where('user_id', $userId)
-                                ->select('id', 'is_active')
-                                ->get();
+        // ⚡ CORRECTION : Charger manuellement les dernières analyses
+        $projectIds = $projects->pluck('id');
+        
+        // Récupérer la dernière analyse pour chaque projet
+        $latestAnalyses = SeoAnalysis::whereIn('project_id', $projectIds)
+            ->whereIn('id', function($query) use ($projectIds) {
+                $query->selectRaw('MAX(id)')
+                      ->from('seo_analyses')
+                      ->whereIn('project_id', $projectIds)
+                      ->groupBy('project_id');
+            })
+            ->get()
+            ->keyBy('project_id');
 
-            $totalProjects = $allProjects->count();
-            $activeProjects = $allProjects->where('is_active', true)->count();
-            $projectIds = $allProjects->pluck('id');
+        // ⚡ CORRECTION : Compter les analyses pour chaque projet
+        $analysesCounts = SeoAnalysis::whereIn('project_id', $projectIds)
+            ->selectRaw('project_id, COUNT(*) as count')
+            ->groupBy('project_id')
+            ->get()
+            ->keyBy('project_id');
 
-            // 🔥 OPTIMISATION : Count simple sans charger les relations
-            $totalAnalyses = SeoAnalysis::whereIn('project_id', $projectIds)->count();
-            
-            // 🔥 OPTIMISATION : Score moyen avec requête optimisée
-            $avgScore = SeoAnalysis::whereIn('project_id', $projectIds)
-                ->select('project_id', 'score')
-                ->whereIn('id', function($query) use ($projectIds) {
-                    $query->selectRaw('MAX(id)')
-                          ->from('seo_analyses')
-                          ->whereIn('project_id', $projectIds)
-                          ->groupBy('project_id');
-                })
-                ->avg('score') ?? 0;
+        // ⚡ ATTACHER les données aux projets
+        foreach ($projects as $project) {
+            $project->latest_analysis = $latestAnalyses[$project->id] ?? null;
+            $project->analyses_count = $analysesCounts[$project->id]->count ?? 0;
+            $project->current_score = $latestAnalyses[$project->id]->seo_score ?? null;
+        }
 
-            return compact(
-                'projects', 
-                'totalProjects', 
-                'activeProjects', 
-                'totalAnalyses', 
-                'avgScore'
-            );
-        });
-
-        \Log::info('📦 Données projets servies', [
-            'from_cache' => Cache::has($cacheKey) ? '✅ OUI' : '❌ NON',
-            'user_id' => $userId,
-            'page' => $page
+        // ⚡ DEBUG : Vérifier les scores
+        \Log::info('📊 Scores calculés', [
+            'projects' => $projects->map(function($project) {
+                return [
+                    'project' => $project->name,
+                    'score_base' => $project->latest_analysis ? $project->latest_analysis->score : null,
+                    'score_dynamique' => $project->current_score,
+                    'analyses_count' => $project->analyses_count
+                ];
+            })->toArray()
         ]);
 
-        return view('admin.backend.projects.index', $data);
-    }
+        // Statistiques globales
+        $allProjects = Project::where('user_id', $userId)->get();
+        $allProjectIds = $allProjects->pluck('id');
+
+        $totalProjects = $allProjects->count();
+        $activeProjects = $allProjects->where('is_active', true)->count();
+        $totalAnalyses = SeoAnalysis::whereIn('project_id', $allProjectIds)->count();
+        
+        // Score moyen basé sur les dernières analyses
+        $latestScores = $latestAnalyses->pluck('seo_score')->filter();
+        $avgScore = $latestScores->isNotEmpty() ? $latestScores->avg() : 0;
+
+        \Log::info('🎯 Score moyen calculé', [
+            'avg_score' => $avgScore,
+            'projects_count' => $projects->count(),
+            'scores_used' => $latestScores->toArray()
+        ]);
+
+        return compact(
+            'projects', 
+            'totalProjects', 
+            'activeProjects', 
+            'totalAnalyses', 
+            'avgScore'
+        );
+    });
+
+    return view('admin.backend.projects.index', $data);
+}
     
     public function destroy($id)
     {

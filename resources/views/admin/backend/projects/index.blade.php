@@ -239,37 +239,78 @@
                 <p class="project-item-url">{{ $project->base_url }}</p>
                 
                 <!-- Statistiques du Projet -->
-                <div class="project-item-metrics">
-                    <div class="project-metric-item">
-                        <div class="project-metric-value">{{ $project->total_analyses ?? 0 }}</div>
-                        <div class="project-metric-label">Analyses</div>
-                    </div>
-                    <div class="project-metric-item">
-                        <div class="project-metric-value">
-                            {{ $project->total_analyses > 0 ? number_format($project->average_score, 1) . '%' : '—' }}
-                        </div>
-                        <div class="project-metric-label">Current Score</div>
-                    </div>
-                    <div class="project-metric-item">
-                        <div class="project-metric-value">
-                            {{ $project->seoAnalyses->isNotEmpty() ? $project->seoAnalyses->sum('score') : 0 }}
-                        </div>
-                        <div class="project-metric-label">Total Score</div>
-                    </div>
-                </div>
+<!-- Statistiques du Projet -->
+<div class="project-item-metrics">
+    <div class="project-metric-item">
+        <div class="project-metric-value">{{ $project->analyses_count }}</div>
+        <div class="project-metric-label">Analyses</div>
+    </div>
+    <div class="project-metric-item">
+        <div class="project-metric-value">
+            @php
+                // ⚡ CORRECTION : Utiliser les données attachées
+                $currentScore = $project->current_score;
+                $totalAnalyses = $project->analyses_count;
+                
+                // DEBUG TEMPORAIRE
+                $scoreBase = $project->latest_analysis ? $project->latest_analysis->score : null;
+                $scoreDynamique = $project->current_score;
+            @endphp
+            
+            {{-- DEBUG TEMPORAIRE - À SUPPRIMER --}}
+            <div style="font-size: 10px; color: #666; margin-bottom: 5px;">
+                Base: {{ $scoreBase ?? 'N/A' }} | Calc: {{ $scoreDynamique ?? 'N/A' }}
+            </div>
+            
+            @if($currentScore)
+                <span class="score-indicator {{ $currentScore >= 80 ? 'score-high' : ($currentScore >= 60 ? 'score-medium' : 'score-low') }}">
+                    {{ number_format($currentScore, 1) }}%
+                </span>
+            @else
+                <span class="text-muted">—</span>
+            @endif
+        </div>
+        <div class="project-metric-label">
+            @if($totalAnalyses > 0)
+                Current Score
+                <small class="text-muted d-block">({{ $totalAnalyses }} analyse(s))</small>
+            @else
+                No analysis
+            @endif
+        </div>
+    </div>
+    <div class="project-metric-item">
+        <div class="project-metric-value">
+            @php
+                // Score moyen basé sur toutes les analyses du projet
+                $averageScore = \App\Models\SeoAnalysis::where('project_id', $project->id)
+                    ->get()
+                    ->avg(fn($analysis) => $analysis->seo_score);
+            @endphp
+            {{ $averageScore ? number_format($averageScore, 1) : '0' }}
+        </div>
+        <div class="project-metric-label">Avg Score</div>
+    </div>
+</div>
 
-                <!-- Barre de Progression SEO -->
-                <div class="project-progress-section">
-                    <div class="project-progress-header">
-                        <span class="project-progress-label">SEO Score Progress</span>
-                        <span class="project-progress-percentage">{{ number_format($project->average_score, 1) }}%</span>
-                    </div>
-                    <div class="project-progress-container">
-                        <div class="project-progress-bar" style="width: {{ $project->average_score }}%">
-                            <div class="project-progress-fill"></div>
-                        </div>
-                    </div>
-                </div>
+<!-- Barre de Progression SEO -->
+<div class="project-progress-section">
+    <div class="project-progress-header">
+        <span class="project-progress-label">Current SEO Score</span>
+        <span class="project-progress-percentage">
+            @if($currentScore)
+                {{ number_format($currentScore, 1) }}%
+            @else
+                —
+            @endif
+        </span>
+    </div>
+    <div class="project-progress-container">
+        <div class="project-progress-bar" style="width: {{ $currentScore ?? 0 }}%">
+            <div class="project-progress-fill"></div>
+        </div>
+    </div>
+</div>
 
                 <!-- Mots-clés -->
                <!-- Mots-clés - Version Test -->

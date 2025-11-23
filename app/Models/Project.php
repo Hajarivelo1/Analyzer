@@ -68,20 +68,20 @@ class Project extends Model
      * Score moyen basé sur seo_score dynamique
      */
     public function getAverageScoreAttribute(): float
-    {
-        $analyses = $this->seoAnalyses;
-        if ($analyses->isEmpty()) return 0;
+{
+    $analyses = $this->seoAnalyses;
+    if ($analyses->isEmpty()) return 0;
 
-        return $analyses->avg(fn($analysis) => $analysis->seo_score);
-    }
+    return $analyses->avg(fn($analysis) => $analysis->seo_score); // ⚡ Utiliser seo_score
+}
 
     /**
      * Score total basé sur seo_score dynamique
      */
     public function getTotalScoreAttribute(): int
-    {
-        return $this->seoAnalyses->sum(fn($analysis) => $analysis->seo_score);
-    }
+{
+    return $this->seoAnalyses->sum(fn($analysis) => $analysis->seo_score); // ⚡ Utiliser seo_score
+}
 
     public function analysisRuns()
 {
