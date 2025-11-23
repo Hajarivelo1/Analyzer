@@ -82,4 +82,10 @@ class Project extends Model
     {
         return $this->seoAnalyses->sum(fn($analysis) => $analysis->seo_score);
     }
+
+    public function analysisRuns()
+{
+    return $this->hasMany(SeoAnalysis::class);
+}
+
 }

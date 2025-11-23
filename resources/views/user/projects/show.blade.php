@@ -670,7 +670,7 @@
     border-left: 4px solid #3B82F6;
 }
 </style>
-<div class="container mt-5">
+<div class="container">
 
 
 
@@ -685,23 +685,26 @@
             @php
                 $hasMainContent = !empty($analysis->main_content);
                 $content = is_array($analysis->content_analysis) ? $analysis->content_analysis : [];
-                $paragraphs = $content['paragraphs'] ?? [];
-                $hasParagraphs = is_array($paragraphs) && count($paragraphs) > 0;
+                
+                // 🔥 CORRECTION : Variables cohérentes pour les paragraphes
+                $allParagraphs = $content['paragraphs'] ?? [];
+                $paragraphCount = $content['paragraph_count'] ?? 0;
+                $hasParagraphs = $paragraphCount > 0;
+                
+                // 🔥 CORRECTION : Limiter l'affichage à 30 paragraphes maximum
+                $displayedParagraphs = array_slice($allParagraphs, 0, 30);
+                $displayedCount = count($displayedParagraphs);
+                $hasDisplayedParagraphs = $displayedCount > 0;
 
-
-                // 🔥 DEBUG TEMPORAIRE
-    echo "<!-- DEBUG: ";
-    echo "hasMainContent: " . ($hasMainContent ? 'true' : 'false') . ", ";
-    echo "paragraph_count: " . ($content['paragraph_count'] ?? '0') . ", ";
-    echo "paragraphs count: " . count($paragraphs) . ", ";
-    echo "short_paragraphs: " . ($content['short_paragraphs'] ?? '0') . ", ";
-    echo "duplicates: " . count($content['duplicate_paragraphs'] ?? []);
-    echo " -->";
-
-
-
-
-
+                // 🔥 DEBUG TEMPORAIRE - CORRIGÉ
+                echo "<!-- DEBUG: ";
+                echo "hasMainContent: " . ($hasMainContent ? 'true' : 'false') . ", ";
+                echo "paragraph_count: " . $paragraphCount . ", ";
+                echo "all_paragraphs: " . count($allParagraphs) . ", ";
+                echo "displayed_paragraphs: " . $displayedCount . ", ";
+                echo "short_paragraphs: " . ($content['short_paragraphs'] ?? '0') . ", ";
+                echo "duplicates: " . count($content['duplicate_paragraphs'] ?? []);
+                echo " -->";
             @endphp
             <div class="row">
                 <div class="col-md-12">
@@ -721,19 +724,22 @@
                             @endif
                             <br>
                             @if($hasParagraphs)
-    ✅ {{ $content['paragraph_count'] }} paragraphs extracted
-    @if(count($paragraphs) < $content['paragraph_count'])
-        <br><small>({{ count($paragraphs) }} displayed for performance)</small>
-    @endif
-@else
-    ❌ No paragraphs data
-@endif
+                                ✅ {{ $paragraphCount }} paragraphs extracted
+                                @if($displayedCount < $paragraphCount)
+                                    <br><small>({{ $displayedCount }} displayed for performance)</small>
+                                @endif
+                            @else
+                                ❌ No paragraphs extracted
+                            @endif
                         </div>
-                        @if(!empty($content['paragraph_count']))
+                        @if($hasParagraphs)
                             <div class="mt-3">
-                                <strong>🧾 Paragraphs extracted :</strong> {{ $content['paragraph_count'] }}<br>
+                                <strong>🧾 Paragraphs extracted :</strong> {{ $paragraphCount }}<br>
                                 <strong>📌 Short paragraphs :</strong> {{ $content['short_paragraphs'] ?? 0 }}<br>
-                                <strong>🔁 Duplications :</strong> {{ count($content['duplicate_paragraphs'] ?? []) }}
+                                <strong>🔁 Duplications :</strong> {{ count($content['duplicate_paragraphs'] ?? []) }}<br>
+                                @if($displayedCount < $paragraphCount)
+                                    <strong>📱 Displayed :</strong> {{ $displayedCount }} (limited for performance)
+                                @endif
                             </div>
                         @else
                             <div class="mt-3 text-warning">
@@ -779,29 +785,48 @@
                     </div>
                 @endif
 
-                @if($hasParagraphs)
+                @if($hasDisplayedParagraphs)
                     <div class="col-md-6">
                         <div class="glass-card mb-4" style="background: rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; overflow: hidden;">
                             <button class="btn w-100 text-start d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#paragraphCollapse" aria-expanded="false" aria-controls="paragraphCollapse" style="background: transparent; border: none; color: #000;">
                                 <span>🧾 Paragraphs extracted</span>
-                                <span class="badge bg-light text-dark">{{ count($paragraphs) }} Displayed</span>
+                                <span class="badge bg-light text-dark">{{ $displayedCount }} Displayed</span>
                             </button>
                             <div class="collapse" id="paragraphCollapse">
                                 <div class="p-3" style="max-height: 400px; overflow-y: auto;">
+                                    @if($displayedCount < $paragraphCount)
+                                        <div class="alert alert-info mb-3">
+                                            <small>📱 Showing {{ $displayedCount }} of {{ $paragraphCount }} paragraphs (limited for performance)</small>
+                                        </div>
+                                    @endif
                                     <ul class="list-group list-group-flush">
-                                        @foreach($paragraphs as $p)
+                                        @foreach($displayedParagraphs as $index => $p)
                                             @php
                                                 $length = str_word_count($p);
                                                 $rowClass = $length < 40 ? 'text-danger' : ($length < 80 ? 'text-warning' : 'text-success');
                                             @endphp
                                             <li class="list-group-item bg-transparent {{ $rowClass }}" style="word-break: break-word;">
+                                                <small class="text-muted me-2">#{{ $index + 1 }}</small>
                                                 {{ $p }}<br>
                                                 <small class="text-muted">{{ $length }} words</small>
                                             </li>
                                         @endforeach
                                     </ul>
+                                    @if($displayedCount < $paragraphCount)
+                                        <div class="text-center mt-3">
+                                            <small class="text-muted">... and {{ $paragraphCount - $displayedCount }} more paragraphs not displayed</small>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                @elseif($hasParagraphs)
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Paragraphs available but not displayed</strong><br>
+                            <small>{{ $paragraphCount }} paragraphs were extracted but cannot be displayed due to performance limits.</small>
                         </div>
                     </div>
                 @else
@@ -815,7 +840,9 @@
                 @endif
 
                 @php
-                    $shorts = array_filter($paragraphs, fn($p) => strlen($p) < 100);
+                    // 🔥 CORRECTION : Utiliser tous les paragraphes pour les analyses
+                    $shorts = array_filter($allParagraphs, fn($p) => str_word_count($p) < 40);
+                    $displayedShorts = array_slice($shorts, 0, 20); // Limiter l'affichage
                 @endphp
                 @if($hasParagraphs && count($shorts) > 0)
                     <div class="col-md-6">
@@ -826,9 +853,15 @@
                             </button>
                             <div class="collapse" id="shortParagraphCollapse">
                                 <div class="p-3" style="max-height: 300px; overflow-y: auto;">
+                                    @if(count($displayedShorts) < count($shorts))
+                                        <div class="alert alert-info mb-3">
+                                            <small>📱 Showing {{ count($displayedShorts) }} of {{ count($shorts) }} short paragraphs</small>
+                                        </div>
+                                    @endif
                                     <ul class="list-group list-group-flush">
-                                        @foreach($shorts as $p)
+                                        @foreach($displayedShorts as $index => $p)
                                             <li class="list-group-item bg-transparent text-danger" style="word-break: break-word;">
+                                                <small class="text-muted me-2">#{{ $index + 1 }}</small>
                                                 {{ $p }}<br>
                                                 <small class="text-muted">{{ str_word_count($p) }} words</small>
                                             </li>
@@ -842,6 +875,7 @@
 
                 @php
                     $duplicates = $content['duplicate_paragraphs'] ?? [];
+                    $displayedDuplicates = array_slice($duplicates, 0, 20); // Limiter l'affichage
                 @endphp
                 @if($hasParagraphs && count($duplicates) > 0)
                     <div class="col-md-6">
@@ -852,9 +886,15 @@
                             </button>
                             <div class="collapse" id="duplicateParagraphCollapse">
                                 <div class="p-3" style="max-height: 300px; overflow-y: auto;">
+                                    @if(count($displayedDuplicates) < count($duplicates))
+                                        <div class="alert alert-info mb-3">
+                                            <small>📱 Showing {{ count($displayedDuplicates) }} of {{ count($duplicates) }} duplicates</small>
+                                        </div>
+                                    @endif
                                     <ul class="list-group list-group-flush">
-                                        @foreach($duplicates as $p)
+                                        @foreach($displayedDuplicates as $index => $p)
                                             <li class="list-group-item bg-transparent text-danger" style="word-break: break-word;">
+                                                <small class="text-muted me-2">#{{ $index + 1 }}</small>
                                                 {{ $p }}<br>
                                                 <small class="text-muted">{{ str_word_count($p) }} words</small>
                                             </li>
@@ -867,6 +907,7 @@
                 @endif
             </div>
         </div>
+
 
         <div class="glass-card mt-5 p-4 mb-4" style="background: #f7f6fc;  border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #000; word-wrap: break-word; overflow-wrap: break-word;">
             <div class="d-flex align-items-center mb-3">
@@ -1085,6 +1126,8 @@
                 </a>
             </li>
         </div>
+        @include('user.projects.partials.ai-summary', ['ai' => $ai])
+
     @endif
 
     {{-- ⬇️ LES DEUX @endif MANQUANTS AJOUTÉS --}}
@@ -1230,12 +1273,11 @@ if (data.page_rank !== null && data.page_rank !== undefined && !window.pageRankD
                         everythingReady = false;
                     }
                     
-                    // Arrêter la surveillance seulement quand TOUT est prêt
                     if (everythingReady) {
-                        console.log('🎯 Toutes les données sont prêtes !');
-                        stopWatching();
-                        showNotification('✅ Analyse SEO complète terminée', 'success');
-                    }
+    console.log('✅ All analysis data has been processed');
+    stopMonitoring();
+    showNotification('SEO analysis completed successfully', 'success');
+}
                 })
                 .catch(error => {
                     console.log('❌ Erreur surveillance:', error);

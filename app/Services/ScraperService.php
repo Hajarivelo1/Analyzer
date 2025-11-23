@@ -265,77 +265,63 @@ class ScraperService
     /**
      * 🔥 EXTRACTION DU TEXTE PRINCIPAL - CORRIGÉE POUR TOUJOURS PRIVILÉGIER LES PARAGRAPHES
      */
-    private function extractMainText(DomCrawler $crawler): string
-    {
-        try {
-            // 🔥 STRATÉGIE FORCÉE : TOUJOURS COMMENCER PAR LES PARAGRAPHES
-            $paragraphs = $crawler->filter('p')->each(function($node) {
-                $text = trim($node->text());
-                // 🔥 CRITÈRE TRÈS PERMISSIF pour capturer tout le contenu
-                return strlen($text) > 3 ? $text : null;
-            });
+    /**
+ * 🔥 EXTRACTION DU TEXTE PRINCIPAL - CORRIGÉE POUR TOUT LE CONTENU
+ */
+private function extractMainText(DomCrawler $crawler): string
+{
+    try {
+        // 🔥 STRATÉGIE AMÉLIORÉE : Extraire TOUT le texte du body d'abord
+        $bodyText = $crawler->filter('body')->text('');
+        
+        // Nettoyer le texte
+        $cleanText = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $bodyText);
+        $cleanText = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $cleanText);
+        $cleanText = strip_tags($cleanText);
+        $cleanText = preg_replace('/\s+/', ' ', $cleanText);
+        $cleanText = trim($cleanText);
+        
+        $wordCount = $this->countWords($cleanText);
+        
+        Log::info("✅ CONTENU COMPLET extrait du body", [
+            'word_count' => $wordCount,
+            'char_count' => strlen($cleanText),
+            'method' => 'body_complet'
+        ]);
+        
+        // Si on a un bon volume de texte, on le retourne
+        if ($wordCount > 50) {
+            return $cleanText;
+        }
+        
+        // 🔥 FALLBACK : Essayer avec les paragraphes
+        $paragraphs = $crawler->filter('p')->each(function($node) {
+            $text = trim($node->text());
+            return strlen($text) > 3 ? $text : null;
+        });
+        
+        $paragraphs = array_filter($paragraphs);
+        
+        if (!empty($paragraphs)) {
+            $paragraphText = implode("\n\n", $paragraphs);
+            $paragraphWordCount = $this->countWords($paragraphText);
             
-            $paragraphs = array_filter($paragraphs);
-            
-            if (!empty($paragraphs)) {
-                $text = implode("\n\n", $paragraphs);
-                $wordCount = $this->countWords($text);
-                Log::info("✅ PARAGRAPHES EXTRACTIONS FORCÉE", [
-                    'paragraph_count' => count($paragraphs),
-                    'word_count' => $wordCount,
-                    'char_count' => strlen($text),
-                    'avg_words_per_paragraph' => count($paragraphs) > 0 ? round($wordCount / count($paragraphs), 1) : 0
-                ]);
-                
-                // 🔥 SI on a des paragraphes, on retourne TOUJOURS ça (même si peu)
-                return $text;
-            }
-            
-            // 🔥 Fallback normal si AUCUN paragraphe trouvé
-            $selectors = [
-                'main', 'article', '.content', '#content', '.main-content', 
-                '.post-content', '.entry-content', 'section', '.article-content',
-                '.page-content', '.main', '.blog-content', '.single-content',
-                '[role="main"]', '.container', '.wrapper', '.site-content',
-                '.content-area', '.primary-content', '.main-content-area',
-                'div.content', 'div.main', '.post', '.page'
-            ];
-            
-            foreach ($selectors as $selector) {
-                if ($crawler->filter($selector)->count() > 0) {
-                    $element = $crawler->filter($selector)->first();
-                    $text = $element->text('');
-                    
-                    if ($this->countWords($text) > 10) {
-                        Log::info("✅ Contenu structuré trouvé avec sélecteur: {$selector}", [
-                            'word_count' => $this->countWords($text),
-                            'char_count' => strlen($text)
-                        ]);
-                        return $text;
-                    }
-                }
-            }
-            
-            // 🔥 DERNIER FALLBACK : Body complet
-            $bodyText = $crawler->filter('body')->text('');
-            $cleanText = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $bodyText);
-            $cleanText = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $cleanText);
-            $cleanText = strip_tags($cleanText);
-            $cleanText = preg_replace('/\s+/', ' ', $cleanText);
-            $cleanText = trim($cleanText);
-            
-            Log::info("✅ Contenu extrait du body", [
-                'word_count' => $this->countWords($cleanText),
-                'char_count' => strlen($cleanText)
+            Log::info("✅ Contenu des paragraphes", [
+                'paragraph_count' => count($paragraphs),
+                'word_count' => $paragraphWordCount,
+                'method' => 'paragraphes'
             ]);
             
-            return $cleanText;
-            
-        } catch (\Exception $e) {
-            Log::warning('Main text extraction failed', ['error' => $e->getMessage()]);
-            return '';
+            return $paragraphText;
         }
+        
+        return $cleanText; // Retourner au moins le texte du body
+        
+    } catch (\Exception $e) {
+        Log::warning('Main text extraction failed', ['error' => $e->getMessage()]);
+        return '';
     }
+}
 
     /**
      * Debug temporaire pour l'extraction de contenu
@@ -487,99 +473,120 @@ class ScraperService
      * Nouvelle méthode pour extraire les paragraphes du texte
      */
     private function extractParagraphsFromText(string $text): array
-    {
-        if (empty($text)) {
-            return [];
-        }
+{
+    if (empty($text)) {
+        return [];
+    }
 
-        // 🔥 STRATÉGIE AMÉLIORÉE : Plusieurs méthodes
-        $paragraphs = [];
-        
-        // Méthode 1: Sépare par doubles sauts de ligne
-        $paragraphs = preg_split('/\n\s*\n/', $text);
-        
-        // Filtrer et nettoyer - CRITÈRE BEAUCOUP PLUS PERMISSIF
-        $paragraphs = array_map('trim', $paragraphs);
-        $paragraphs = array_filter($paragraphs, function($p) {
-            return strlen($p) > 10; // ⬅️ Réduit de 20 à 10 caractères
+    // 🔥 STRATÉGIE AMÉLIORÉE : Plusieurs méthodes
+    $paragraphs = [];
+    
+    // Méthode 1: Sépare par doubles sauts de ligne
+    $paragraphs = preg_split('/\n\s*\n/', $text);
+    
+    // Filtrer et nettoyer
+    $paragraphs = array_map('trim', $paragraphs);
+    $paragraphs = array_filter($paragraphs, function($p) {
+        return strlen($p) > 10 && $this->countWords($p) > 1;
+    });
+    
+    // Si pas assez de paragraphes, essayer avec les sauts de ligne simples
+    if (count($paragraphs) < 2) {
+        $altParagraphs = preg_split('/\n+/', $text);
+        $altParagraphs = array_map('trim', $altParagraphs);
+        $altParagraphs = array_filter($altParagraphs, function($p) {
+            return strlen($p) > 5 && $this->countWords($p) > 1;
         });
         
-        // Si pas assez de paragraphes, essayer avec les sauts de ligne simples
-        if (count($paragraphs) < 2) {
-            $altParagraphs = preg_split('/\n+/', $text);
-            $altParagraphs = array_map('trim', $altParagraphs);
-            $altParagraphs = array_filter($altParagraphs, function($p) {
-                return strlen($p) > 5 && $this->countWords($p) > 1;
-            });
-            
-            if (count($altParagraphs) > count($paragraphs)) {
-                $paragraphs = $altParagraphs;
-            }
+        if (count($altParagraphs) > count($paragraphs)) {
+            $paragraphs = $altParagraphs;
         }
-        
-        Log::info("📊 Extraction paragraphes AMÉLIORÉE", [
-            'original_text_length' => strlen($text),
-            'original_word_count' => $this->countWords($text),
-            'paragraphs_found' => count($paragraphs),
-            'paragraphs_samples' => array_map(function($p) {
-                return [
-                    'text' => substr($p, 0, 80) . (strlen($p) > 80 ? '...' : ''),
-                    'length' => strlen($p),
-                    'words' => $this->countWords($p)
-                ];
-            }, array_slice($paragraphs, 0, 5))
-        ]);
-        
-        return array_values($paragraphs);
     }
+    
+    // 🔥 AJOUT : Si toujours pas assez, essayer avec les points comme séparateurs
+    if (count($paragraphs) < 2) {
+        $sentences = preg_split('/[.!?]+/', $text);
+        $sentences = array_map('trim', $sentences);
+        $sentences = array_filter($sentences, function($p) {
+            return strlen($p) > 20 && $this->countWords($p) > 3;
+        });
+        
+        if (count($sentences) > count($paragraphs)) {
+            $paragraphs = $sentences;
+        }
+    }
+    
+    Log::info("📊 Extraction paragraphes AMÉLIORÉE", [
+        'original_text_length' => strlen($text),
+        'original_word_count' => $this->countWords($text),
+        'paragraphs_found' => count($paragraphs),
+        'paragraphs_samples' => array_map(function($p) {
+            return [
+                'text' => substr($p, 0, 80) . (strlen($p) > 80 ? '...' : ''),
+                'length' => strlen($p),
+                'words' => $this->countWords($p)
+            ];
+        }, array_slice($paragraphs, 0, 5))
+    ]);
+    
+    return array_values($paragraphs);
+}
 
     /**
      * Analyse des paragraphes optimisée - CORRIGÉE
      */
-    private function analyzeParagraphsOptimized(string $text): array
-    {
-        if (empty($text)) {
-            return $this->getEmptyParagraphAnalysis();
-        }
-
-        try {
-            $paragraphs = $this->extractParagraphsFromText($text);
-            
-            if (empty($paragraphs)) {
-                return $this->getEmptyParagraphAnalysis();
-            }
-
-            $totalParagraphs = count($paragraphs);
-            $paragraphsForAnalysis = array_slice($paragraphs, 0, min(30, $totalParagraphs));
-
-            $shortCount = 0;
-            $wordCounts = [];
-            
-            foreach ($paragraphs as $p) {
-                $wordCount = $this->countWords($p);
-                $wordCounts[] = $wordCount;
-                
-                // Paragraphe court : moins de 40 mots OU moins de 200 caractères
-                if ($wordCount < 40 || strlen($p) < 200) {
-                    $shortCount++;
-                }
-            }
-
-            return [
-                'paragraph_count' => $totalParagraphs,
-                'short_paragraphs' => $shortCount,
-                'sample_paragraphs' => array_slice($paragraphs, 0, 5),
-                'paragraphs' => $paragraphsForAnalysis,
-                'duplicate_paragraphs' => $this->findDuplicateParagraphs($paragraphs),
-                'word_counts' => $wordCounts,
-                'avg_words_per_paragraph' => $totalParagraphs > 0 ? round(array_sum($wordCounts) / $totalParagraphs, 1) : 0,
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Paragraph analysis failed', ['error' => $e->getMessage()]);
-            return $this->getEmptyParagraphAnalysis();
-        }
+    /**
+ * Analyse des paragraphes optimisée - CORRIGÉE
+ */
+private function analyzeParagraphsOptimized(string $text): array
+{
+    if (empty($text)) {
+        return $this->getEmptyParagraphAnalysis();
     }
+
+    try {
+        $paragraphs = $this->extractParagraphsFromText($text);
+        
+        if (empty($paragraphs)) {
+            return $this->getEmptyParagraphAnalysis();
+        }
+
+        $totalParagraphs = count($paragraphs);
+        
+        // 🔥 CORRECTION : Limiter les paragraphes pour l'affichage seulement
+        // Mais garder le compte total correct
+        $paragraphsForAnalysis = array_slice($paragraphs, 0, min(30, $totalParagraphs));
+
+        $shortCount = 0;
+        $wordCounts = [];
+        
+        foreach ($paragraphs as $p) {
+            $wordCount = $this->countWords($p);
+            $wordCounts[] = $wordCount;
+            
+            // Paragraphe court : moins de 40 mots
+            if ($wordCount < 40) {
+                $shortCount++;
+            }
+        }
+
+        // 🔥 CORRECTION : Retourner TOUS les paragraphes pour l'analyse
+        // mais limiter seulement l'affichage dans le frontend
+        return [
+            'paragraph_count' => $totalParagraphs,           // ← Total réel
+            'short_paragraphs' => $shortCount,
+            'sample_paragraphs' => array_slice($paragraphs, 0, 5),
+            'paragraphs' => $paragraphs,                     // ← 🔥 TOUS les paragraphes maintenant
+            'duplicate_paragraphs' => $this->findDuplicateParagraphs($paragraphs),
+            'word_counts' => $wordCounts,
+            'avg_words_per_paragraph' => $totalParagraphs > 0 ? round(array_sum($wordCounts) / $totalParagraphs, 1) : 0,
+        ];
+
+    } catch (\Exception $e) {
+        Log::error('Paragraph analysis failed', ['error' => $e->getMessage()]);
+        return $this->getEmptyParagraphAnalysis();
+    }
+}
 
     /**
      * Analyse de paragraphes vide

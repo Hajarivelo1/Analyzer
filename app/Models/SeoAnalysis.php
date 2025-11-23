@@ -66,6 +66,17 @@ class SeoAnalysis extends Model
         'pagespeed_mobile_audits',
         'pagespeed_mobile_scores',
         'pagespeed_mobile_formFactor',
+
+        // 🔥 AJOUT : NOUVELLES COLONNES IA
+        'ai_score',
+        'ai_issues',
+        'ai_priorities', 
+        'ai_checklist',
+        'ai_raw_response',
+        'ai_generated_at',
+        'ai_model_used',
+        'ai_summary',
+        'pagespeed_opportunities', // ⚠️ Cette colonne semble manquer aussi
     ];
 
     /**
@@ -84,6 +95,14 @@ class SeoAnalysis extends Model
         'pagespeed_metrics' => 'array',
         'pagespeed_scores' => 'array',
         'pagespeed_audits' => 'array',
+        'pagespeed_opportunities' => 'array', // ⚠️ AJOUT
+        
+        // 🔥 AJOUT : CASTS POUR LES NOUVELLES COLONNES IA
+        'ai_issues' => 'array',
+        'ai_priorities' => 'array',
+        'ai_checklist' => 'array',
+        'ai_summary' => 'array',
+        'ai_generated_at' => 'datetime',
         
         // Casts pour les champs Pagespeed desktop
         'pagespeed_desktop_score' => 'integer',
@@ -120,6 +139,7 @@ class SeoAnalysis extends Model
         'page_rank_global' => 'integer',
         'accessibility_score' => 'float',
         'score' => 'integer',
+        'ai_score' => 'integer', // 🔥 AJOUT
     ];
 
     /**
@@ -128,6 +148,115 @@ class SeoAnalysis extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    // 🔥 AJOUT : MÉTHODES POUR LES DONNÉES IA
+
+    /**
+     * Accès facile aux données IA structurées
+     */
+    public function getAiAnalysisAttribute()
+    {
+        return [
+            'score' => $this->ai_score,
+            'issues' => $this->ai_issues ?? [],
+            'priorities' => $this->ai_priorities ?? [],
+            'checklist' => $this->ai_checklist ?? [],
+            'raw' => $this->ai_raw_response,
+            'generated_at' => $this->ai_generated_at,
+            'model_used' => $this->ai_model_used,
+        ];
+    }
+
+    /**
+     * Compatibilité avec l'ancien système ai_summary
+     */
+    public function getAiSummaryAttribute($value)
+    {
+        // Si c'est déjà un tableau (nouveau système)
+        if (is_array($value)) {
+            return $value;
+        }
+        
+        // Si c'est une string JSON (ancien format)
+        if (is_string($value)) {
+            return json_decode($value, true) ?? [];
+        }
+        
+        // Fallback : utiliser les nouvelles colonnes
+        return [
+            'score' => $this->ai_score,
+            'issues' => $this->ai_issues ?? [],
+            'priorities' => $this->ai_priorities ?? [],
+            'checklist' => $this->ai_checklist ?? [],
+            'raw' => $this->ai_raw_response,
+        ];
+    }
+
+    public function setAiSummaryAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['ai_summary'] = json_encode($value);
+        } else {
+            $this->attributes['ai_summary'] = $value;
+        }
+    }
+
+    /**
+     * Vérifier si l'analyse IA est disponible
+     */
+    public function getHasAiAnalysisAttribute()
+    {
+        return !is_null($this->ai_score) || !empty($this->ai_raw_response);
+    }
+
+    /**
+     * Scope pour les analyses avec IA
+     */
+    public function scopeWithAiAnalysis($query)
+    {
+        return $query->whereNotNull('ai_score')
+                    ->orWhereNotNull('ai_raw_response');
+    }
+
+    /**
+     * Récupère les problèmes IA formatés
+     */
+    public function getFormattedAiIssuesAttribute(): array
+    {
+        $issues = $this->ai_issues ?? [];
+        
+        return array_map(function($issue, $index) {
+            return [
+                'id' => $index + 1,
+                'text' => $issue,
+                'type' => $this->categorizeIssue($issue)
+            ];
+        }, $issues, array_keys($issues));
+    }
+
+    /**
+     * Catégorise les problèmes IA
+     */
+    private function categorizeIssue(string $issue): string
+    {
+        $issue = strtolower($issue);
+        
+        if (str_contains($issue, ['h1', 'h2', 'h3', 'heading', 'titre'])) {
+            return 'structure';
+        } elseif (str_contains($issue, ['meta', 'description', 'title', 'balise'])) {
+            return 'meta';
+        } elseif (str_contains($issue, ['image', 'alt', 'img'])) {
+            return 'media';
+        } elseif (str_contains($issue, ['lien', 'link', 'url'])) {
+            return 'links';
+        } elseif (str_contains($issue, ['mobile', 'responsive', 'viewport'])) {
+            return 'mobile';
+        } elseif (str_contains($issue, ['vitesse', 'speed', 'performance', 'temps'])) {
+            return 'performance';
+        } else {
+            return 'general';
+        }
     }
 
     /**

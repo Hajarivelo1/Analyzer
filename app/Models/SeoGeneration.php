@@ -14,5 +14,12 @@ class SeoGeneration extends Model
     {
         return $this->belongsTo(\App\Models\User::class);
     }
+
+
+    public function variants()
+    {
+        return $this->hasMany(SeoVariant::class, 'generation_id');
+    }
+
 }
 

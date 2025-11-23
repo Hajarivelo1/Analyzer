@@ -13,6 +13,7 @@ use App\Http\Controllers\SeoAnalysisController;
 use App\Http\Controllers\WhoisController;
 use App\Http\Controllers\Admin\SeoContentController;
 use App\Http\Controllers\User\SeoHistoryController;
+use App\Http\Controllers\SeoAiController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -87,6 +88,20 @@ Route::middleware('auth')->group(function () {
         ->name('seo.history.index');
     Route::post('/seo/history/reuse/{generation}', [SeoHistoryController::class, 'reuse'])
         ->name('seo.history.reuse');
+
+        Route::post('/seo/variant/{variant}/choose', [SeoContentController::class, 'choose'])
+    ->name('seo.variant.choose');
+
+
+
+
+    Route::post('/projects/{id}/ai/summary', [SeoAiController::class, 'generateSummary']);
+
+// web.php
+Route::get('/projects/{project}/ai/summary', [SeoAiController::class, 'generateSummary']);
+
+
+
 
     // ✅ PageSpeed status route
     Route::get('/seo-analysis/{analysis}/status', function (\App\Models\SeoAnalysis $analysis) {

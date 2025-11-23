@@ -36,28 +36,28 @@ class SeoAnalysisController extends Controller
     // ⏱️ TIMEOUT AUGMENTÉ
     set_time_limit(120); // 2 minutes max
     ini_set('max_execution_time', 120);
-    
+
     try {
         $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'base_url' => 'required|url',
+            'name'       => 'sometimes|required|string|max:255',
+            'base_url'   => 'required|url',
             'project_id' => 'sometimes|exists:projects,id'
         ]);
 
         Log::info('🚀 Début analyse SEO', ['url' => $request->base_url]);
 
-        // 🔧 Gestion du projet avec cache
+        // 🔧 Gestion du projet
         $project = $this->getOrCreateProject($request);
-        $domain = parse_url($project->base_url, PHP_URL_HOST);
+        $domain  = parse_url($project->base_url, PHP_URL_HOST);
 
-        // 🔥 OPTIMISATION : Exécution parallèle des tâches rapides
+        // 🔥 Exécution parallèle des tâches rapides
         $scraperData = $this->runScraperWithFallback($scraper, $project->base_url, $project->id);
-        $whoisData = $this->runWhoisLookup($whois, $domain);
+        $whoisData   = $this->runWhoisLookup($whois, $domain);
 
         // 🗂️ Préparer les données pour la sauvegarde
         $analysisData = $this->prepareAnalysisData($project, $scraperData, $whoisData);
 
-        // ✅ Sauvegarde initiale IMMÉDIATE
+        // ✅ Sauvegarde initiale
         $seoAnalysis = SeoAnalysis::create($analysisData);
 
         if (!$seoAnalysis) {
@@ -66,29 +66,257 @@ class SeoAnalysisController extends Controller
 
         Log::info('✅ SEO analysis created', ['analysis_id' => $seoAnalysis->id]);
 
-        // 🔥 APPROCHE ASYNCHRONE - PageSpeed ET PageRank en background
-Log::info('🔥 DISPATCH PageSpeed ET PageRank en background', [
-    'analysis_id' => $seoAnalysis->id,
-    'has_fetchpagerank' => true, // ⬅️ AJOUTEZ CE LOG
-    'queue_connection' => config('queue.default')
-]);
+        // ⚡ Génération immédiate du résumé IA - AVEC EXTRACTION CORRECTE DES DONNÉES
+        try {
+            Log::debug('🔍 [IA-1] DÉBUT Génération IA', ['analysis_id' => $seoAnalysis->id]);
+            
+            // 🔥 CORRECTION : EXTRACTION CORRECTE DES DONNÉES DEPUIS LA STRUCTURE RÉELLE
+            Log::debug('🔍 [IA-DATA] Exploration headings_structure', [
+                'analysis_id' => $seoAnalysis->id,
+                'has_headings_structure' => isset($scraperData['headings_structure']),
+                'has_summary' => isset($scraperData['headings_structure']['summary']),
+                'headings_structure_keys' => isset($scraperData['headings_structure']) ? array_keys($scraperData['headings_structure']) : []
+            ]);
+
+            // 🔥 EXTRACTION DES HEADINGS DEPUIS LA STRUCTURE RÉELLE
+            $h1Count = 0;
+            $h2Count = 0;
+            $h3Count = 0;
+            $h1Texts = [];
+
+            if (isset($scraperData['headings_structure']['summary']['by_level'])) {
+                // Depuis le summary
+                $h1Count = $scraperData['headings_structure']['summary']['by_level']['h1'] ?? 0;
+                $h2Count = $scraperData['headings_structure']['summary']['by_level']['h2'] ?? 0;
+                $h3Count = $scraperData['headings_structure']['summary']['by_level']['h3'] ?? 0;
+            } elseif (isset($scraperData['headings_structure']['h1'])) {
+                // Depuis les tableaux directs
+                $h1Count = count($scraperData['headings_structure']['h1'] ?? []);
+                $h2Count = count($scraperData['headings_structure']['h2'] ?? []);
+                $h3Count = count($scraperData['headings_structure']['h3'] ?? []);
+            }
+
+            // 🔥 EXTRACTION DES TEXTE H1
+            if (isset($scraperData['headings_structure']['h1'])) {
+                foreach ($scraperData['headings_structure']['h1'] as $h1) {
+                    if (isset($h1['text'])) {
+                        $h1Texts[] = $h1['text'];
+                    }
+                }
+            }
+
+            // 🔥 RÉCUPÉRATION DU TECHNICAL_AUDIT
+            $technicalAudit = $scraperData['technical_audit'] ?? [];
+
+            // 🔥 CORRECTION : DONNÉES COMPLÈTES ET CORRECTES
+            $realSeoData = [
+                'title' => $scraperData['title'] ?? '',
+                'meta_description' => $scraperData['meta_description'] ?? '',
+                'h1_count' => $h1Count,
+                'h2_count' => $h2Count,
+                'h3_count' => $h3Count,
+                'h1_texts' => $h1Texts,
+                'word_count' => $scraperData['word_count'] ?? 0,
+                'keywords' => $scraperData['keywords'] ?? [],
+                'technical_audit' => $technicalAudit,
+                'content_analysis' => $scraperData['content_analysis'] ?? [],
+                'url' => $project->base_url,
+                
+                // 🔥 AJOUT : TOUTES LES DONNÉES MANQUANTES DU SCRAPER
+                'headings_structure' => $scraperData['headings_structure'] ?? [],
+                'https_enabled' => $scraperData['https_enabled'] ?? false,
+                'has_structured_data' => $scraperData['has_structured_data'] ?? false,
+                'noindex_detected' => $scraperData['noindex_detected'] ?? false,
+                'mobile' => $scraperData['mobile'] ?? false,
+                'has_og_tags' => $scraperData['has_og_tags'] ?? false,
+                'has_favicon' => $scraperData['has_favicon'] ?? false,
+                'html_lang' => $scraperData['html_lang'] ?? '',
+                'load_time' => $scraperData['load_time'] ?? 0,
+                'html_size' => $scraperData['html_size'] ?? 0,
+                'total_links' => $scraperData['total_links'] ?? 0,
+                'images' => $scraperData['images'] ?? [],
+                'readability_score' => $scraperData['readability_score'] ?? 0,
+                'density' => $scraperData['density'] ?? 0,
+            ];
+
+            // 🔥 CORRECTION : Utiliser content_analysis pour paragraph_count
+            if (isset($scraperData['content_analysis']['paragraph_count'])) {
+                $realSeoData['paragraph_count'] = $scraperData['content_analysis']['paragraph_count'];
+            }
+
+            // 🔥 CORRECTION : Utiliser images pour images_count
+            $realSeoData['images_count'] = count($scraperData['images'] ?? []);
+
+            // 🔥 CORRECTION : Utiliser technical_audit pour internal_links
+            $realSeoData['internal_links'] = $technicalAudit['internal_links'] ?? 0;
+
+            // 🔥 CORRECTION : Calculer external_links
+            $realSeoData['external_links'] = ($scraperData['total_links'] ?? 0) - ($technicalAudit['internal_links'] ?? 0);
+
+            // 🔥 CORRECTION : body_length = longueur du main_content
+            $realSeoData['body_length'] = strlen($scraperData['main_content'] ?? '');
+
+            // Gérer le cas où keywords est un tableau - MAIS GARDER LE TABLEAU POUR L'IA
+            // Ne pas convertir en string pour que l'IA puisse analyser la fréquence
+            // $realSeoData['keywords'] reste un tableau
+
+            $perf = [];
+            if (!empty($seoAnalysis->pagespeed_opportunities)) {
+                if (is_string($seoAnalysis->pagespeed_opportunities)) {
+                    $perf = json_decode($seoAnalysis->pagespeed_opportunities, true) ?? [];
+                } elseif (is_array($seoAnalysis->pagespeed_opportunities)) {
+                    $perf = $seoAnalysis->pagespeed_opportunities;
+                }
+            }
+
+            Log::debug('🔍 [IA-2] DONNÉES CORRECTES DU SCRAPER', [
+                'analysis_id' => $seoAnalysis->id,
+                'title' => $realSeoData['title'],
+                'meta_description_preview' => substr($realSeoData['meta_description'], 0, 100) . '...',
+                'h1_count' => $realSeoData['h1_count'],
+                'h2_count' => $realSeoData['h2_count'], 
+                'h3_count' => $realSeoData['h3_count'],
+                'h1_texts' => $realSeoData['h1_texts'],
+                'word_count' => $realSeoData['word_count'],
+                'keywords' => $realSeoData['keywords'],
+                'body_length' => $realSeoData['body_length'],
+                'paragraph_count' => $realSeoData['paragraph_count'],
+                'images_count' => $realSeoData['images_count'],
+                'technical_audit_count' => count($realSeoData['technical_audit']),
+                'technical_audit_sample' => array_slice($realSeoData['technical_audit'], 0, 5)
+            ]);
+
+            // Vérifier si le template existe
+            $promptView = 'ai.prompts.summary';
+            if (!view()->exists($promptView)) {
+                Log::error('❌ [IA-ERROR] Template IA manquant', ['view' => $promptView]);
+                throw new \Exception("Template IA non trouvé: {$promptView}");
+            }
+
+            // 🔥 CORRECTION : Passer les vraies données du scraper au template
+            $prompt = view($promptView, [
+                'seo' => $realSeoData, 
+                'perf' => $perf, 
+                'project' => $project
+            ])->render();
+
+            Log::debug('🔍 [IA-3] Prompt généré avec données CORRECTES', [
+                'analysis_id' => $seoAnalysis->id,
+                'prompt_length' => strlen($prompt),
+                'prompt_preview' => substr($prompt, 0, 500) . '...'
+            ]);
+
+            // Vérifier si le service Ollama est disponible
+            $ollamaService = app(\App\Services\OllamaSeoService::class);
+            if (!$ollamaService) {
+                Log::error('❌ [IA-ERROR] Service Ollama non disponible');
+                throw new \Exception("Service Ollama non disponible");
+            }
+
+            Log::debug('🔍 [IA-4] Appel à Ollama...', ['analysis_id' => $seoAnalysis->id]);
+            $responseRaw = $ollamaService->generateContent($prompt);
+            
+            Log::debug('🔍 [IA-5] Réponse Ollama reçue', [
+                'analysis_id' => $seoAnalysis->id,
+                'has_response' => !empty($responseRaw),
+                'response_length' => $responseRaw ? strlen($responseRaw) : 0,
+                'response_preview' => $responseRaw ? substr($responseRaw, 0, 200) . '...' : 'NULL'
+            ]);
+            
+            if ($responseRaw) {
+                Log::debug('🔍 [IA-6] Parsing de la réponse...', ['analysis_id' => $seoAnalysis->id]);
+                $parsed = $ollamaService->parseResponse($responseRaw);
+                
+                // 🔍 DEBUG - Vérifier les données parsées
+                Log::debug('🔍 [IA-7] Données parsées', [
+                    'analysis_id' => $seoAnalysis->id,
+                    'score' => $parsed['score'] ?? null,
+                    'issues_count' => count($parsed['issues'] ?? []),
+                    'priorities_count' => count($parsed['priorities'] ?? []),
+                    'checklist_count' => count($parsed['checklist'] ?? []),
+                    'has_raw' => !empty($parsed['raw']),
+                    'raw_length' => $parsed['raw'] ? strlen($parsed['raw']) : 0,
+                    'all_keys' => array_keys($parsed)
+                ]);
+                
+                // 💾 SAUVEGARDE DANS LES NOUVELLES COLONNES IA
+                try {
+                    Log::debug('🔍 [IA-8] Sauvegarde dans NOUVELLES colonnes IA...', ['analysis_id' => $seoAnalysis->id]);
+                    
+                    // 🔥 SAUVEGARDE DANS LES COLONNES DÉDIÉES
+                    $updateData = [
+                        'ai_score' => $parsed['score'] ?? null,
+                        'ai_issues' => $parsed['issues'] ?? [],
+                        'ai_priorities' => $parsed['priorities'] ?? [],
+                        'ai_checklist' => $parsed['checklist'] ?? [],
+                        'ai_raw_response' => $parsed['raw'] ?? $responseRaw,
+                        'ai_generated_at' => now(),
+                        'ai_model_used' => 'ollama-seo-analyzer',
+                    ];
+
+                    // 🔥 MISE À JOUR DIRECTE
+                    $seoAnalysis->update($updateData);
+
+                    Log::info('✅ [IA-SUCCESS] Données IA sauvegardées dans NOUVELLES colonnes', [
+                        'analysis_id' => $seoAnalysis->id,
+                        'ai_score' => $updateData['ai_score'],
+                        'ai_issues_count' => count($updateData['ai_issues']),
+                        'ai_priorities_count' => count($updateData['ai_priorities']),
+                        'ai_checklist_count' => count($updateData['ai_checklist']),
+                    ]);
+
+                } catch (\Exception $e) {
+                    Log::error('❌ [IA-SAVE-ERROR] Erreur sauvegarde nouvelles colonnes IA', [
+                        'analysis_id' => $seoAnalysis->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    
+                    // Fallback : sauvegarde dans l'ancien format
+                    $seoAnalysis->update([
+                        'ai_summary' => $parsed,
+                        'ai_raw_response' => $responseRaw,
+                        'ai_generated_at' => now(),
+                    ]);
+                }
+            } else {
+                Log::warning('❌ [IA-WARNING] Réponse Ollama vide', ['analysis_id' => $seoAnalysis->id]);
+            }
+            
+            Log::debug('🔍 [IA-9] FIN Génération IA', ['analysis_id' => $seoAnalysis->id]);
+            
+        } catch (\Throwable $e) {
+            Log::error('❌ [IA-ERROR] Erreur Génération IA', [
+                'analysis_id' => $seoAnalysis->id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
+        // 🔥 Dispatch PageSpeed et PageRank en background
+        Log::info('🔥 Dispatch PageSpeed ET PageRank en background', [
+            'analysis_id'       => $seoAnalysis->id,
+            'has_fetchpagerank' => true,
+            'queue_connection'  => config('queue.default')
+        ]);
 
         dispatch(new RunPageSpeedAudit($seoAnalysis, $project->base_url));
-        dispatch(new FetchPageRank($seoAnalysis)); // ⬅️ AJOUTEZ CETTE LIGNE
-        
+        dispatch(new FetchPageRank($seoAnalysis));
 
         Log::info('✅ Les deux jobs ont été dispatchés');
 
-        // ✅ REDIRECTION IMMÉDIATE (ne pas attendre PageSpeed)
+        // ✅ Redirection immédiate
         return redirect()->route('project.show', [
-            'id' => $project->id,
-            'analysis_id' => $seoAnalysis->id
-        ])->with('success', 'SEO analysis started! PageSpeed results will be available shortly.');
-
+            'id'          => $project->id,
+            'analysis_id' => $seoAnalysis->id,
+            'refresh'     => 'true', // forces Cache::forget in show()
+        ])->with('success', 'SEO analysis started! Résumé IA et PageSpeed seront disponibles.');
+        
     } catch (\Exception $e) {
         Log::error('❌ Exception analyse SEO', [
-            'message' => $e->getMessage(), 
-            'trace' => $e->getTraceAsString()
+            'message' => $e->getMessage(),
+            'trace'   => $e->getTraceAsString()
         ]);
         return redirect()->back()
                          ->withErrors(['error' => 'Analysis failed: ' . $e->getMessage()])
@@ -97,6 +325,95 @@ Log::info('🔥 DISPATCH PageSpeed ET PageRank en background', [
 }
 
 
+/**
+ * 🔥 METHODE prepareAiData CORRIGÉE (plus de strlen sur array)
+ */
+private function prepareAiData(?SeoAnalysis $analysis): array
+{
+    $defaultAi = [
+        'score' => null,
+        'issues' => [],
+        'priorities' => [],
+        'checklist' => [],
+        'raw' => null,
+    ];
+
+    if (!$analysis) {
+        return $defaultAi;
+    }
+
+    // 🔥 CORRECTION : Vérification safe des types
+    $hasNewData = !is_null($analysis->ai_score) || 
+                  !empty($analysis->ai_issues) || 
+                  !empty($analysis->ai_priorities) || 
+                  !empty($analysis->ai_checklist) || 
+                  !empty($analysis->ai_raw_response);
+
+    $hasLegacyData = !empty($analysis->ai_summary);
+
+    Log::debug('🔧 [PREPARE-AI] Préparation données', [
+        'analysis_id' => $analysis->id,
+        'has_new_data' => $hasNewData,
+        'has_legacy_data' => $hasLegacyData,
+        'ai_score' => $analysis->ai_score,
+        'ai_raw_response_type' => gettype($analysis->ai_raw_response),
+        'ai_summary_type' => gettype($analysis->ai_summary),
+    ]);
+
+    // 🔥 PRIORITÉ 1: Nouvelles colonnes (COMPLÈTES)
+    if ($hasNewData) {
+        $aiData = [
+            'score' => $analysis->ai_score,
+            'issues' => $analysis->ai_issues ?? [],
+            'priorities' => $analysis->ai_priorities ?? [],
+            'checklist' => $analysis->ai_checklist ?? [],
+            'raw' => $analysis->ai_raw_response,
+        ];
+        
+        Log::debug('✅ [PREPARE-AI] Utilisation nouvelles colonnes', [
+            'score' => $aiData['score'],
+            'issues_count' => count($aiData['issues']),
+            'priorities_count' => count($aiData['priorities']),
+            'checklist_count' => count($aiData['checklist']),
+            'raw_type' => gettype($aiData['raw']),
+        ]);
+        
+        return $aiData;
+    }
+
+    // 🔥 PRIORITÉ 2: Ancien format ai_summary
+    if ($hasLegacyData) {
+        Log::debug('🔄 [PREPARE-AI] Utilisation format legacy', [
+            'ai_summary_type' => gettype($analysis->ai_summary)
+        ]);
+        
+        if (is_array($analysis->ai_summary)) {
+            Log::debug('📦 [PREPARE-AI] ai_summary est un tableau direct');
+            return array_merge($defaultAi, $analysis->ai_summary);
+        } 
+        
+        if (is_string($analysis->ai_summary)) {
+            Log::debug('📝 [PREPARE-AI] ai_summary est une chaîne, tentative décodage JSON');
+            $decoded = json_decode($analysis->ai_summary, true);
+            
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                Log::debug('✅ [PREPARE-AI] JSON décodé avec succès');
+                return array_merge($defaultAi, $decoded);
+            } else {
+                Log::debug('❌ [PREPARE-AI] Échec décodage JSON, utilisation raw');
+                return ['raw' => $analysis->ai_summary];
+            }
+        }
+        
+        // 🔥 CORRECTION : Gestion d'autres types
+        Log::debug('⚠️ [PREPARE-AI] Type inattendu pour ai_summary', [
+            'type' => gettype($analysis->ai_summary)
+        ]);
+    }
+
+    Log::debug('❌ [PREPARE-AI] Aucune donnée IA disponible');
+    return $defaultAi;
+}
 
 
 
@@ -501,33 +818,110 @@ private function dispatchAsyncJobs(SeoAnalysis $seoAnalysis, string $url, string
     $userId = auth()->id();
     $analysisId = $request->get('analysis_id');
     $forceRefresh = $request->get('refresh') === 'true';
-    
+
     // 🔥 CLÉ DE CACHE INTELLIGENTE
     $cacheKey = "project_show_{$id}_" . ($analysisId ? "analysis_{$analysisId}" : "latest") . "_user_{$userId}";
-    
-    // 🔥 INVALIDATION : Si forceRefresh ou nouvelle analyse
+
     if ($forceRefresh) {
         Cache::forget($cacheKey);
         Log::info('🔄 Cache forcément rafraîchi', ['cache_key' => $cacheKey]);
     }
 
-    // 🔥 OPTIMISATION : Cache pendant 15 minutes avec fallback
     try {
-        $viewData = Cache::remember($cacheKey, 900, function () use ($id, $request, $userId) {
+        $viewData = Cache::remember($cacheKey, 300, function () use ($id, $request, $userId) {
             return $this->loadProjectData($id, $request, $userId);
         });
     } catch (\Exception $e) {
-        // 🔥 FALLBACK : Si cache échoue, charger normalement
         Log::warning('❌ Cache failed, using direct load', ['error' => $e->getMessage()]);
         $viewData = $this->loadProjectData($id, $request, $userId);
     }
 
-    // ✅ Transmission à la vue
-    return view('user.projects.show', $viewData);
+    // ✅ CORRECTION : Utiliser l'analyse principale de $viewData
+    $analysis = $viewData['analysis'] ?? null;
+    $latestRun = $viewData['latestRun'] ?? null;
+    
+    // ✅ CORRECTION : Charger explicitement l'analyse si analysis_id est fourni
+    $analysisId = $request->get('analysis_id');
+    
+    Log::debug('🔍 [SHOW-1] Données chargées', [
+        'project_id' => $id,
+        'analysis_id_request' => $analysisId,
+        'analysis_id' => $analysis->id ?? null,
+        'latestRun_id' => $latestRun->id ?? null,
+    ]);
+
+    // 🔥 SI analysis_id est fourni mais analysis ne correspond pas, charger explicitement
+    if ($analysisId && (!$analysis || $analysis->id != $analysisId)) {
+        Log::debug('🔍 [SHOW-2] Rechargement de l\'analyse spécifique', [
+            'requested_analysis_id' => $analysisId,
+            'current_analysis_id' => $analysis->id ?? null
+        ]);
+        
+        $requestedAnalysis = SeoAnalysis::find($analysisId);
+        if ($requestedAnalysis) {
+            $analysis = $requestedAnalysis;
+            $viewData['analysis'] = $analysis;
+            Log::debug('🔍 [SHOW-3] Analyse spécifique chargée', [
+                'analysis_id' => $analysis->id,
+                'has_ai_analysis' => $analysis->has_ai_analysis
+            ]);
+        }
+    }
+
+    // ✅ Gestion du résumé IA - VERSION CORRIGÉE
+    $ai = $this->prepareAiData($analysis);
+
+    // 🔥 CORRECTION : Fallback vers latestRun si l'analyse principale n'a pas d'IA
+    if (empty($ai['score']) && empty($ai['issues']) && empty($ai['raw']) && $latestRun && $latestRun->id !== $analysis?->id) {
+        Log::debug('🔄 [SHOW-FALLBACK] Tentative avec latestRun', [
+            'analysis_id' => $analysis->id ?? null,
+            'latestRun_id' => $latestRun->id,
+            'analysis_has_ai' => $analysis->has_ai_analysis ?? false,
+            'latestRun_has_ai' => $latestRun->has_ai_analysis ?? false,
+        ]);
+        
+        $latestRunAi = $this->prepareAiData($latestRun);
+        if (!empty($latestRunAi['score']) || !empty($latestRunAi['issues']) || !empty($latestRunAi['raw'])) {
+            $ai = $latestRunAi;
+            Log::debug('✅ [SHOW-FALLBACK-SUCCESS] Données IA récupérées depuis latestRun');
+        }
+    }
+
+    Log::debug('🎯 [SHOW-FINAL] Données AI pour la vue', [
+        'analysis_id' => $analysis->id ?? null,
+        'ai_score' => $ai['score'] ?? null,
+        'ai_issues_count' => count($ai['issues'] ?? []),
+        'ai_priorities_count' => count($ai['priorities'] ?? []),
+        'ai_checklist_count' => count($ai['checklist'] ?? []),
+        'has_raw_content' => !empty($ai['raw']),
+    ]);
+
+    return view('user.projects.show', array_merge($viewData, compact('ai')));
 }
 
 /**
- * 🔥 METHODE EXTRACTED pour le chargement des données
+ * 🔥 NOUVELLE METHODE: Identifier la source des données IA
+ */
+private function getAiDataSource(?SeoAnalysis $analysis, array $ai): string
+{
+    if (!$analysis) return 'no_analysis';
+    
+    if (!empty($ai['raw'])) {
+        return 'raw_content';
+    }
+    
+    if (!empty($ai['score']) || !empty($ai['issues'])) {
+        if (!is_null($analysis->ai_score) || !empty($analysis->ai_raw_response)) {
+            return 'new_columns';
+        } elseif (!empty($analysis->ai_summary)) {
+            return 'legacy_summary';
+        }
+    }
+    
+    return 'no_data';
+}
+/**
+ * 🔥 METHODE loadProjectData CORRIGÉE
  */
 private function loadProjectData($id, Request $request, $userId): array
 {
@@ -543,15 +937,45 @@ private function loadProjectData($id, Request $request, $userId): array
 
     $analysis = $this->refreshAnalysisWithPageSpeedCheck($analysis);
 
+    // 🔥 CORRECTION : Préparer les données IA pour la vue
+    $ai = $this->prepareAiData($analysis);
+
+    // 🔥 Récupérer la dernière analyse pour fallback
+    $latestRun = $this->getLatestAnalysis($project);
+
     return [
         'project' => $project,
         'analysis' => $analysis,
+        'latestRun' => $latestRun,
         'scores' => $analysis->pagespeed_scores ?? [],
         'metrics' => $analysis->pagespeed_metrics ?? [],
         'auditFragments' => $analysis->pagespeed_audits ?? [],
+        'ai' => $ai,
     ];
 }
 
+
+/**
+ * 🔥 METHODE: Récupérer la dernière analyse
+ */
+private function getLatestAnalysis(Project $project): ?SeoAnalysis
+{
+    return $project->seoAnalyses()
+        ->latest()
+        ->first();
+}
+/**
+ * 🔥 METHODE: Vérifier si des données IA existent
+ */
+private function checkAiDataExists(SeoAnalysis $analysis): bool
+{
+    return !is_null($analysis->ai_score) || 
+           !empty($analysis->ai_issues) || 
+           !empty($analysis->ai_priorities) || 
+           !empty($analysis->ai_checklist) || 
+           !empty($analysis->ai_raw_response) ||
+           !empty($analysis->ai_summary);
+}
 /**
  * 🔥 METHODE POUR INVALIDER LE CACHE QUAND BESOIN
  */
@@ -619,4 +1043,46 @@ public function clearProjectCache($projectId): void
 
         return $freshAnalysis;
     }
+
+
+    // Dans SeoAnalysisController
+public function debugAiGeneration($analysisId)
+{
+    $analysis = SeoAnalysis::find($analysisId);
+    
+    if (!$analysis) {
+        return response()->json(['error' => 'Analysis not found'], 404);
+    }
+
+    $debugInfo = [
+        'analysis_id' => $analysis->id,
+        'created_at' => $analysis->created_at,
+        'updated_at' => $analysis->updated_at,
+        'ai_columns' => [
+            'ai_score' => $analysis->ai_score,
+            'ai_issues' => $analysis->ai_issues,
+            'ai_priorities' => $analysis->ai_priorities,
+            'ai_checklist' => $analysis->ai_checklist,
+            'ai_raw_response' => $analysis->ai_raw_response ? 'PRESENT' : 'NULL',
+        ],
+        'legacy_ai_summary' => $analysis->ai_summary ? 'PRESENT' : 'NULL',
+        'has_ai_analysis' => $analysis->has_ai_analysis,
+        'ai_generated_at' => $analysis->ai_generated_at,
+    ];
+
+    // Vérifier si les données IA sont cohérentes
+    $hasNewAiData = !is_null($analysis->ai_score) || 
+                   !empty($analysis->ai_issues) || 
+                   !empty($analysis->ai_priorities) || 
+                   !empty($analysis->ai_checklist) || 
+                   !empty($analysis->ai_raw_response);
+
+    $debugInfo['data_coherence'] = [
+        'has_new_ai_data' => $hasNewAiData,
+        'has_legacy_ai_data' => !empty($analysis->ai_summary),
+        'should_display_ai' => $hasNewAiData || !empty($analysis->ai_summary),
+    ];
+
+    return response()->json($debugInfo);
+}
 }
