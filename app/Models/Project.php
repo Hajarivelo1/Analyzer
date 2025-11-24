@@ -49,6 +49,14 @@ class Project extends Model
     }
 
     /**
+     * Relation avec les générations SEO
+     */
+    public function seoGenerations(): HasMany
+    {
+        return $this->hasMany(SeoGeneration::class);
+    }
+
+    /**
      * Scope pour les projets actifs
      */
     public function scopeActive($query)
