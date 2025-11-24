@@ -29,21 +29,21 @@
                         </button>
                         <ul class="dropdown-menu shadow-lg border-0 rounded-3">
                             <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 {{ !request('project_id') ? 'active' : '' }}" 
+                                <a class="dropdown-item d-flex align-items-center gap-2 {{ !request('project_id') ? 'active' : '' }} text-dark" 
                                    href="{{ request()->fullUrlWithQuery(['project_id' => null]) }}">
-                                    <i class="bi bi-grid-1x2"></i>
+                                    <i class="bi bi-grid-1x2 text-dark"></i>
                                     All Projects
-                                    <small class="text-muted ms-auto">{{ $items->total() }}</small>
+                                    <small class="text-dark text-muted ms-auto">{{ $items->total() }}</small>
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             @foreach($projects as $project)
                             <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 {{ request('project_id') == $project->id ? 'active' : '' }}" 
+                                <a class=" text-dark dropdown-item d-flex align-items-center gap-2 {{ request('project_id') == $project->id ? 'active' : '' }}" 
                                    href="{{ request()->fullUrlWithQuery(['project_id' => $project->id]) }}">
-                                    <i class="bi bi-folder"></i>
+                                    <i class="bi bi-folder text-dark"></i>
                                     {{ $project->name }}
-                                    <small class="text-muted ms-auto">{{ $project->seo_generations_count ?? 0 }}</small>
+                                    <small class="text-muted ms-auto text-dark">{{ $project->seo_generations_count ?? 0 }}</small>
                                 </a>
                             </li>
                             @endforeach
@@ -52,7 +52,7 @@
                     @endif
                     
                     <span class="badge bg-primary bg-opacity-10 text-white border-0 px-3 py-2">
-    <i class="bi bi-collection me-1 text-white"></i>1 Generations
+    <i class="bi bi-collection me-1 text-white"></i>{{ $items->total() }} Generations
 </span>
                 </div>
             </div>
@@ -383,6 +383,10 @@
 </div>
 
 <style>
+
+.bg-info.bg-opacity-10 {
+    background-color: rgb(23 187 218 / 38%) !important;
+}
     .tw{
         color: white !important;
     }
