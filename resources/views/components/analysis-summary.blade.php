@@ -107,7 +107,7 @@
                 <i class="bi bi-graph-up-arrow"></i>
             </div>
             <div>
-                <h5 class="summary-title mb-0">SEO Analysis Summary</h5>
+                <h5 class="summary-title mb-0 text-white">SEO Analysis Summary</h5>
                 <p class="summary-subtitle mb-0">Comprehensive website performance overview</p>
             </div>
         </div>
@@ -198,29 +198,73 @@
         </div>
 
         <!-- Keywords -->
-        <div class="analysis-section">
-            <div class="section-header">
-                <i class="bi bi-key section-icon"></i>
-                <h6 class="section-title">Top Keywords</h6>
-            </div>
-            <div class="section-content">
-                @if(count($keywords) > 0)
+<div class="analysis-section">
+    <div class="section-header">
+        <i class="bi bi-key section-icon"></i>
+        <h6 class="section-title">Top Keywords</h6>
+        @if(!empty($analysis->keywords) && count($analysis->keywords) > 0)
+            <span class="section-badge">{{ count($analysis->keywords) }} terms</span>
+        @endif
+    </div>
+    <div class="section-content">
+        @if(!empty($analysis->keywords) && count($analysis->keywords) > 0)
+            @php
+                // Séparer les mots simples des phrases
+                $singleWords = [];
+                $phrases = [];
+                
+                foreach ($analysis->keywords as $phrase => $count) {
+                    $wordCount = count(explode(' ', $phrase));
+                    if ($wordCount === 1) {
+                        $singleWords[$phrase] = $count;
+                    } else {
+                        $phrases[$phrase] = $count;
+                    }
+                }
+                
+                arsort($singleWords);
+                arsort($phrases);
+            @endphp
+
+            <!-- Mots simples -->
+            @if(count($singleWords) > 0)
+                <div class="keyword-category">
+                    <h7 class="keyword-category-title">Single Words</h7>
                     <div class="keywords-list">
-                        @foreach ($keywords as $word => $freq)
+                        @foreach (array_slice($singleWords, 0, 6) as $word => $count)
                             <div class="keyword-item">
                                 <span class="keyword-text">{{ $word }}</span>
-                                <span class="keyword-frequency">{{ $freq }}</span>
+                                <span class="keyword-frequency">{{ $count }}</span>
                             </div>
                         @endforeach
                     </div>
-                @else
-                    <div class="empty-state">
-                        <i class="bi bi-search"></i>
-                        <p>No significant keywords</p>
+                </div>
+            @endif
+
+            <!-- Phrases -->
+            @if(count($phrases) > 0)
+                <div class="keyword-category mt-4">
+                    <h7 class="keyword-category-title">Key Phrases</h7>
+                    <div class="keywords-list">
+                        @foreach (array_slice($phrases, 0, 6) as $phrase => $count)
+                            <div class="keyword-item">
+                                <span class="keyword-text">{{ $phrase }}</span>
+                                <span class="keyword-frequency">{{ $count }}</span>
+                            </div>
+                        @endforeach
                     </div>
-                @endif
+                </div>
+            @endif
+
+        @else
+            <div class="empty-state">
+                <i class="bi bi-search"></i>
+                <p>No significant keywords detected</p>
+                <p class="text-xs text-gray-500 mt-1">Keywords will appear after content analysis</p>
             </div>
-        </div>
+        @endif
+    </div>
+</div>
 
         <!-- Network Info -->
         <div class="analysis-section">

@@ -207,66 +207,522 @@
             </div>
 
             <!-- Images -->
-            <div class="tab-pane fade" id="images" role="tabpanel">
-                <div class="analysis-card">
-                    <div class="card-header-section">
-                        <i class="bi bi-image"></i>
-                        <h3>Image Analysis</h3>
+<div class="tab-pane fade" id="images" role="tabpanel">
+    <div class="analysis-card">
+        <div class="card-header-section">
+            <i class="bi bi-image"></i>
+            <h3>Image Analysis</h3>
+        </div>
+
+        @php
+            // 🔥 NOUVELLE STRUCTURE DE DONNÉES
+            $imagesData = $analysis->images_data ?? [];
+            if (is_string($imagesData)) {
+                $imagesData = json_decode($imagesData, true) ?? [];
+            }
+            $imagesData = is_array($imagesData) ? $imagesData : [];
+            
+            // Extraction des données structurées
+            $sampleImages = $imagesData['sample'] ?? [];
+            $allImagesWithoutAlt = $imagesData['all_analyzed']['without_alt'] ?? [];
+            $allImagesWithAlt = $imagesData['all_analyzed']['with_alt'] ?? [];
+            $stats = $imagesData['stats'] ?? [];
+            $display = $imagesData['display'] ?? [];
+            $hasMoreWithoutAlt = $imagesData['has_more_without_alt'] ?? false;
+            $hasMoreWithAlt = $imagesData['has_more_with_alt'] ?? false;
+            $warnings = $imagesData['warnings'] ?? [];
+            
+            // Statistiques
+            $totalImages = $stats['total'] ?? 0;
+            $withoutAltCount = $stats['without_alt'] ?? 0;
+            $withAltCount = $stats['with_alt'] ?? 0;
+            $withoutAltPercentage = $stats['without_alt_percentage'] ?? 0;
+        @endphp
+
+        @if($totalImages > 0)
+            <!-- 🔥 STATISTIQUES GLOBALES -->
+            <div class="images-stats-grid mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="bi bi-images"></i>
                     </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ $totalImages }}</div>
+                        <div class="stat-label">Total Images</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card {{ $withoutAltCount > 0 ? 'stat-warning' : 'stat-success' }}">
+                    <div class="stat-icon">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ $withoutAltCount }}</div>
+                        <div class="stat-label">Without Alt Text</div>
+                        <div class="stat-percentage">{{ $withoutAltPercentage }}%</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ $withAltCount }}</div>
+                        <div class="stat-label">With Alt Text</div>
+                        <div class="stat-percentage">{{ 100 - $withoutAltPercentage }}%</div>
+                    </div>
+                </div>
+            </div>
 
-                    @php
-                        $images = $analysis->images_data ?? [];
-                        if (is_string($images)) {
-                            $images = json_decode($images, true) ?? [];
-                        }
-                        $images = is_array($images) ? $images : [];
-                    @endphp
+            <!-- 🔥 AVERTISSEMENTS -->
+            @if(!empty($warnings))
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div>
+                        <strong>Attention</strong>
+                        <ul class="mb-0 mt-1">
+                            @foreach($warnings as $warning)
+                                <li>{{ $warning }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endif
 
-                    @if(!empty($images))
-                        <div class="images-grid">
-                            @foreach($images as $index => $img)
-                                <div class="image-card">
-                                    <div class="image-header">
-                                        <i class="bi bi-file-image"></i>
-                                        <span class="image-index">Image #{{ $index + 1 }}</span>
-                                    </div>
-                                    <div class="image-content">
-                                        @if(is_array($img))
-                                            <div class="image-info">
-                                                <div class="info-item">
-                                                    <label>Source:</label>
-                                                    <span class="truncate-text" title="{{ $img['src'] ?? 'N/A' }}">
-                                                        {{ $img['src'] ?? 'N/A' }}
-                                                    </span>
-                                                </div>
-                                                <div class="info-item">
-                                                    <label>Alt Text:</label>
-                                                    <span class="alt-text {{ empty($img['alt']) ? 'text-warning' : 'text-success' }}">
-                                                        {{ $img['alt'] ?? 'No alt text' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        @else
-                                            <div class="image-info">
-                                                <div class="info-item">
-                                                    <label>Source:</label>
-                                                    <span class="truncate-text">{{ $img }}</span>
-                                                </div>
-                                            </div>
-                                        @endif
+            <!-- 🔥 IMAGES SANS ALT TEXT (PROBLÈME SEO) -->
+            @if($withoutAltCount > 0)
+                <div class="images-section mb-4">
+                    <div class="section-header">
+                        <h4 class="text-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Images Without Alt Text ({{ $withoutAltCount }})
+                        </h4>
+                        <span class="badge bg-warning">SEO Issue</span>
+                    </div>
+                    
+                    <div class="images-grid">
+                        @foreach($display['without_alt'] ?? [] as $index => $img)
+                            <div class="image-card image-warning">
+                                <div class="image-preview">
+                                    <img src="{{ $img['src'] }}" 
+                                         alt="Missing alt text" 
+                                         loading="lazy"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="image-fallback" style="display: none;">
+                                        <i class="bi bi-image"></i>
+                                        <span>Image not available</span>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="empty-state">
-                            <i class="bi bi-images"></i>
-                            <h4>No Images Found</h4>
-                            <p>No images were detected on this page.</p>
+                                <div class="image-info">
+                                    <div class="image-meta">
+                                        <span class="image-badge badge bg-warning">No Alt</span>
+                                        <span class="image-filename">{{ $img['filename'] ?? 'Unknown' }}</span>
+                                    </div>
+                                    <div class="image-src truncate-text" title="{{ $img['src'] }}">
+                                        {{ $img['src'] }}
+                                    </div>
+                                    @if($img['is_probably_logo'] ?? false)
+                                        <div class="image-note text-info">
+                                            <i class="bi bi-info-circle"></i> Probably a logo
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- 🔥 BOUTON EXPAND POUR VOIR PLUS D'IMAGES SANS ALT -->
+                    @if($hasMoreWithoutAlt)
+                        <div class="expand-section">
+                            <button class="btn btn-outline-warning btn-expand" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#allImagesWithoutAlt">
+                                <i class="bi bi-chevron-down"></i>
+                                Show All {{ $withoutAltCount }} Images Without Alt Text
+                            </button>
+                            
+                            <div class="collapse" id="allImagesWithoutAlt">
+                                <div class="images-grid mt-3">
+                                    @foreach(array_slice($allImagesWithoutAlt, count($display['without_alt'] ?? [])) as $index => $img)
+                                        <div class="image-card image-warning">
+                                            <div class="image-preview">
+                                                <img src="{{ $img['src'] }}" 
+                                                     alt="Missing alt text" 
+                                                     loading="lazy"
+                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="image-fallback" style="display: none;">
+                                                    <i class="bi bi-image"></i>
+                                                    <span>Image not available</span>
+                                                </div>
+                                            </div>
+                                            <div class="image-info">
+                                                <div class="image-meta">
+                                                    <span class="image-badge badge bg-warning">No Alt</span>
+                                                    <span class="image-filename">{{ $img['filename'] ?? 'Unknown' }}</span>
+                                                </div>
+                                                <div class="image-src truncate-text" title="{{ $img['src'] }}">
+                                                    {{ $img['src'] }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
                         </div>
                     @endif
                 </div>
+            @endif
+
+            <!-- 🔥 IMAGES AVEC ALT TEXT (BONNES PRATIQUES) -->
+            @if($withAltCount > 0)
+                <div class="images-section">
+                    <div class="section-header">
+                        <h4 class="text-success">
+                            <i class="bi bi-check-circle"></i>
+                            Images With Alt Text ({{ $withAltCount }})
+                        </h4>
+                        <span class="badge bg-success">SEO Good</span>
+                    </div>
+                    
+                    <div class="images-grid">
+                        @foreach($display['with_alt'] ?? [] as $index => $img)
+                            <div class="image-card image-success">
+                                <div class="image-preview">
+                                    <img src="{{ $img['src'] }}" 
+                                         alt="{{ $img['alt'] }}" 
+                                         loading="lazy"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="image-fallback" style="display: none;">
+                                        <i class="bi bi-image"></i>
+                                        <span>Image not available</span>
+                                    </div>
+                                </div>
+                                <div class="image-info">
+                                    <div class="image-meta">
+                                        <span class="image-badge badge bg-success">Has Alt</span>
+                                        <span class="image-filename">{{ $img['filename'] ?? 'Unknown' }}</span>
+                                    </div>
+                                    <div class="image-alt text-success">
+                                        <strong>Alt:</strong> "{{ $img['alt'] }}"
+                                    </div>
+                                    <div class="image-src truncate-text" title="{{ $img['src'] }}">
+                                        {{ $img['src'] }}
+                                    </div>
+                                    @if($img['is_probably_logo'] ?? false)
+                                        <div class="image-note text-info">
+                                            <i class="bi bi-info-circle"></i> Probably a logo
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- 🔥 BOUTON EXPAND POUR VOIR PLUS D'IMAGES AVEC ALT -->
+                    @if($hasMoreWithAlt)
+                        <div class="expand-section">
+                            <button class="btn btn-outline-success btn-expand" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#allImagesWithAlt">
+                                <i class="bi bi-chevron-down"></i>
+                                Show All {{ $withAltCount }} Images With Alt Text
+                            </button>
+                            
+                            <div class="collapse" id="allImagesWithAlt">
+                                <div class="images-grid mt-3">
+                                    @foreach(array_slice($allImagesWithAlt, count($display['with_alt'] ?? [])) as $index => $img)
+                                        <div class="image-card image-success">
+                                            <div class="image-preview">
+                                                <img src="{{ $img['src'] }}" 
+                                                     alt="{{ $img['alt'] }}" 
+                                                     loading="lazy"
+                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="image-fallback" style="display: none;">
+                                                    <i class="bi bi-image"></i>
+                                                    <span>Image not available</span>
+                                                </div>
+                                            </div>
+                                            <div class="image-info">
+                                                <div class="image-meta">
+                                                    <span class="image-badge badge bg-success">Has Alt</span>
+                                                    <span class="image-filename">{{ $img['filename'] ?? 'Unknown' }}</span>
+                                                </div>
+                                                <div class="image-alt text-success">
+                                                    <strong>Alt:</strong> "{{ $img['alt'] }}"
+                                                </div>
+                                                <div class="image-src truncate-text" title="{{ $img['src'] }}">
+                                                    {{ $img['src'] }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            <!-- 🔥 PERFORMANCE ANALYSIS -->
+            @if(isset($stats['performance']))
+                <div class="performance-section mt-4">
+                    <h5><i class="bi bi-speedometer2"></i> Analysis Performance</h5>
+                    <div class="performance-stats">
+                        <div class="performance-item">
+                            <span class="label">Memory Used:</span>
+                            <span class="value">{{ $stats['performance']['memory_used_mb'] ?? 0 }} MB</span>
+                        </div>
+                        <div class="performance-item">
+                            <span class="label">Time Taken:</span>
+                            <span class="value">{{ $stats['performance']['time_used_seconds'] ?? 0 }}s</span>
+                        </div>
+                        <div class="performance-item">
+                            <span class="label">Images/Second:</span>
+                            <span class="value">{{ $stats['performance']['images_per_second'] ?? 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+        @else
+            <!-- 🔥 ÉTAT VIDE -->
+            <div class="empty-state">
+                <i class="bi bi-images"></i>
+                <h4>No Images Found</h4>
+                <p>No images were detected on this page.</p>
             </div>
+        @endif
+    </div>
+</div>
+
+<style>
+/* 🔥 STYLES OPTIMISÉS POUR LA NOUVELLE STRUCTURE */
+.images-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border-left: 4px solid #6c757d;
+}
+
+.stat-card.stat-warning {
+    border-left-color: #ffc107;
+    background: #fffbf0;
+}
+
+.stat-card.stat-success {
+    border-left-color: #198754;
+    background: #f0fff4;
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    color: #6c757d;
+}
+
+.stat-warning .stat-icon { color: #ffc107; }
+.stat-success .stat-icon { color: #198754; }
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.stat-percentage {
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-top: 0.25rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.section-header h4 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.image-card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.image-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.image-card.image-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.image-card.image-success {
+    border-left: 4px solid #198754;
+}
+
+.image-preview {
+    height: 120px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-fallback {
+    flex-direction: column;
+    align-items: center;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.image-info {
+    padding: 0.75rem;
+}
+
+.image-meta {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.image-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+}
+
+.image-filename {
+    font-size: 0.8rem;
+    color: #666;
+    font-family: monospace;
+}
+
+.image-alt {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    font-style: italic;
+}
+
+.image-src {
+    font-size: 0.75rem;
+    color: #6c757d;
+    word-break: break-all;
+}
+
+.image-note {
+    font-size: 0.7rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.expand-section {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.btn-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.performance-section {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.performance-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.performance-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+}
+
+.performance-item .label {
+    font-weight: 500;
+    color: #666;
+}
+
+.performance-item .value {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .images-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .images-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .performance-stats {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 
             <!-- Keywords -->
             <div class="tab-pane fade" id="keywords" role="tabpanel">

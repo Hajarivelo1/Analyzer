@@ -34,7 +34,7 @@ class SeoAnalysisController extends Controller
     public function run(Request $request, ScraperService $scraper, WhoisService $whois, PageSpeedService $pagespeed)
 {
     // ⏱️ TIMEOUT AUGMENTÉ
-    set_time_limit(120); // 2 minutes max
+    set_time_limit(180); // 2 minutes max
     ini_set('max_execution_time', 120);
 
     try {
@@ -808,14 +808,22 @@ private function generateManualFallbackData(string $url): array
  */
 private function prepareAnalysisData(Project $project, array $scraperData, ?array $whoisData): array
 {
-     // 🔥 CORRECTION : Vérification sécurisée de technical_audit
-     $technicalAudit = $scraperData['technical_audit'] ?? [];
+    // 🔥 CORRECTION : Vérification sécurisée de technical_audit
+    $technicalAudit = $scraperData['technical_audit'] ?? [];
     
-     Log::info('🔍 Technical Audit Data', [
-         'has_technical_audit' => isset($scraperData['technical_audit']),
-         'technical_audit_keys' => !empty($technicalAudit) ? array_keys($technicalAudit) : 'none',
-         'has_title' => $technicalAudit['has_title'] ?? 'not_set' // ⬅️ MAINTENANT SÉCURISÉ
-     ]);
+    Log::info('🔍 Technical Audit Data', [
+        'has_technical_audit' => isset($scraperData['technical_audit']),
+        'technical_audit_keys' => !empty($technicalAudit) ? array_keys($technicalAudit) : 'none',
+        'has_title' => $technicalAudit['has_title'] ?? 'not_set' // ⬅️ MAINTENANT SÉCURISÉ
+    ]);
+
+    // 🔥 CORRECTION : Log des keywords pour debug
+    Log::info('🔍 Keywords Data', [
+        'has_keywords' => isset($scraperData['keywords']),
+        'keywords_count' => count($scraperData['keywords'] ?? []),
+        'keywords_sample' => array_slice($scraperData['keywords'] ?? [], 0, 5)
+    ]);
+
     return [
         'project_id' => $project->id,
         'page_url' => $project->base_url,
@@ -825,14 +833,16 @@ private function prepareAnalysisData(Project $project, array $scraperData, ?arra
         
         // 🔥 DONNÉES STRUCTURÉES - CORRIGÉ
         'headings' => $scraperData['headings'] ?? [],
-        'headings_structure' => $this->analyzeHeadingsStructure($scraperData['html'] ?? ''),
+        'headings_structure' => $scraperData['headings_structure'] ?? $this->analyzeHeadingsStructure($scraperData['html'] ?? ''),
         'images_data' => $scraperData['images'] ?? [],
-        'keywords' => $scraperData['keywords'] ?? [],
+        
+        // 🔥 CORRECTION : KEYWORDS BIEN INCLUS
+        'keywords' => $scraperData['keywords'] ?? [], // ⬅️ MAINTENANT PRÉSENT
+        'keyword_density' => $scraperData['density'] ?? 0,
         
         // 🔥 CONTENU
         'raw_html' => substr($scraperData['html'] ?? '', 0, 25000),
         'word_count' => $scraperData['word_count'] ?? 0,
-        'keyword_density' => $scraperData['density'] ?? 0,
         'mobile_friendly' => ($scraperData['mobile'] ?? false) ? 1 : 0,
         'score' => $this->calculateInitialScore($scraperData),
         'recommendations' => 'Génération en cours...',
@@ -843,8 +853,8 @@ private function prepareAnalysisData(Project $project, array $scraperData, ?arra
         'readability_score' => $scraperData['readability_score'] ?? null,
         'cloudflare_blocked' => $scraperData['cloudflare_blocked'] ?? false,
         
-       // 🔥 AUDIT TECHNIQUE - CORRIGÉ (utilise la variable sécurisée)
-       'technical_audit' => $technicalAudit, // ⬅️ CORRECTION ICI
+        // 🔥 AUDIT TECHNIQUE - CORRIGÉ (utilise la variable sécurisée)
+        'technical_audit' => $technicalAudit, // ⬅️ CORRECTION ICI
         
         // Métriques techniques individuelles (pour compatibilité)
         'https_enabled' => $scraperData['https_enabled'] ?? false,
@@ -862,7 +872,30 @@ private function prepareAnalysisData(Project $project, array $scraperData, ?arra
         'pagespeed_score' => 0,
         'pagespeed_metrics' => [],
         'pagespeed_scores' => [],
-        // ... autres champs PageSpeed
+        'pagespeed_audits' => [],
+        'pagespeed_opportunities' => [],
+        
+        // Accessibilité
+        'accessibility_score' => null,
+        'accessibility_title' => null,
+        'accessibility_description' => null,
+        'accessibility_manual' => null,
+        
+        // Autres champs
+        'url' => 'placeholder',
+        'gtmetrix' => null,
+        'page_rank' => null,
+        'page_rank_global' => null,
+        
+        // Champs IA (seront remplis plus tard)
+        'ai_score' => null,
+        'ai_issues' => [],
+        'ai_priorities' => [],
+        'ai_checklist' => [],
+        'ai_raw_response' => null,
+        'ai_generated_at' => null,
+        'ai_model_used' => null,
+        'ai_summary' => null,
     ];
 }
 
@@ -1133,16 +1166,111 @@ private function dispatchAsyncJobs(SeoAnalysis $seoAnalysis, string $url, string
         }
     }
 
-    Log::debug('🎯 [SHOW-FINAL] Données AI pour la vue', [
+    // 🔥 NOUVEAU : Préparation des données keywords
+    $keywordsData = $this->prepareKeywordsData($analysis, $latestRun);
+    
+    Log::debug('🔍 [SHOW-KEYWORDS] Données keywords préparées', [
+        'analysis_id' => $analysis->id ?? null,
+        'keywords_count' => count($keywordsData),
+        'has_keywords' => !empty($keywordsData)
+    ]);
+
+    Log::debug('🎯 [SHOW-FINAL] Données pour la vue', [
         'analysis_id' => $analysis->id ?? null,
         'ai_score' => $ai['score'] ?? null,
         'ai_issues_count' => count($ai['issues'] ?? []),
         'ai_priorities_count' => count($ai['priorities'] ?? []),
         'ai_checklist_count' => count($ai['checklist'] ?? []),
         'has_raw_content' => !empty($ai['raw']),
+        'keywords_count' => count($keywordsData)
     ]);
 
-    return view('user.projects.show', array_merge($viewData, compact('ai')));
+    return view('user.projects.show', array_merge($viewData, compact('ai', 'keywordsData')));
+}
+
+/**
+ * 🔥 NOUVELLE MÉTHODE : Préparation des données keywords
+ */
+private function prepareKeywordsData($analysis, $latestRun = null): array
+{
+    $keywords = [];
+    
+    // Essayer d'abord avec l'analyse principale
+    if (!empty($analysis->keywords)) {
+        $keywords = $this->decodeKeywords($analysis->keywords);
+        
+        Log::debug('🔍 [KEYWORDS-1] Keywords depuis analyse principale', [
+            'analysis_id' => $analysis->id,
+            'keywords_count' => count($keywords),
+            'keywords_sample' => array_slice($keywords, 0, 3)
+        ]);
+    }
+    
+    // Fallback vers latestRun si pas de keywords dans l'analyse principale
+    if (empty($keywords) && $latestRun && !empty($latestRun->keywords)) {
+        $keywords = $this->decodeKeywords($latestRun->keywords);
+        
+        Log::debug('🔄 [KEYWORDS-2] Keywords depuis latestRun (fallback)', [
+            'latestRun_id' => $latestRun->id,
+            'keywords_count' => count($keywords),
+            'keywords_sample' => array_slice($keywords, 0, 3)
+        ]);
+    }
+    
+    // Si toujours vide, créer un tableau vide
+    if (empty($keywords)) {
+        Log::debug('⚠️ [KEYWORDS-3] Aucun keyword trouvé');
+        $keywords = [];
+    }
+    
+    return $keywords;
+}
+
+/**
+ * 🔥 NOUVELLE MÉTHODE : Décodage sécurisé des keywords
+ */
+private function decodeKeywords($keywords): array
+{
+    if (empty($keywords)) {
+        return [];
+    }
+    
+    // Si c'est déjà un tableau, on l'utilise directement
+    if (is_array($keywords)) {
+        return $keywords;
+    }
+    
+    // Si c'est une chaîne JSON, on la décode
+    if (is_string($keywords)) {
+        $decoded = json_decode($keywords, true);
+        
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        
+        // 🔥 FALLBACK : Si c'est une chaîne simple, essayer de la parser
+        if (str_contains($keywords, '{') && str_contains($keywords, '}')) {
+            // C'est peut-être du JSON mal formaté
+            $cleaned = preg_replace('/[^\{\}\"\':,\w\s]/', '', $keywords);
+            $decoded = json_decode($cleaned, true);
+            
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                Log::debug('🔧 [KEYWORDS-FIX] JSON corrigé', [
+                    'original' => substr($keywords, 0, 100),
+                    'cleaned' => substr($cleaned, 0, 100)
+                ]);
+                return $decoded;
+            }
+        }
+        
+        // 🔥 DERNIER FALLBACK : Si c'est une chaîne simple, créer un tableau basique
+        Log::debug('⚠️ [KEYWORDS-FALLBACK] Format de keywords non reconnu', [
+            'input_type' => gettype($keywords),
+            'input_sample' => substr($keywords, 0, 100)
+        ]);
+    }
+    
+    return [];
 }
 
 /**

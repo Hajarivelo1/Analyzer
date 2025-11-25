@@ -10,7 +10,7 @@
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css" >
-
+    <link rel="stylesheet" href="{{ mix('css/show.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <style>
     html, body {
@@ -1411,7 +1411,7 @@ createFloatingShapes();</script>
 <script src="{{ asset('backend/assets/js/code.js') }}"></script>
 
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-
+<script src="{{ mix('js/show.js') }}"></script>
 <script>
  @if(Session::has('message'))
  var type = "{{ Session::get('alert-type','info') }}"
