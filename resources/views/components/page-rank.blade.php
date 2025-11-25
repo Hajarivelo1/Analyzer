@@ -55,7 +55,10 @@
                 <div class="score-section">
                     <div class="score-display">
                         <div class="score-circle">
-                            <div class="circle-progress" style="--progress: {{ $rank * 10 }}%; --color: {{ $color }};">
+                            <div class="circle-progress" style="--progress: {{ $rank * 10 }}%; --color: {{ $color }}; display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;">
                                 <div class="score-number">{{ $rank }}</div>
                                 <div class="score-label">/10</div>
                             </div>
