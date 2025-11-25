@@ -87,12 +87,12 @@
                                 <i class="bi bi-speedometer2"></i>
                                 <span>SEO Score</span>
                             </div>
-                            <div class="metric-value {{ $analysis->seo_score >= 80 ? 'text-success' : ($analysis->seo_score >= 50 ? 'text-warning' : 'text-danger') }}">
+                            <div class="metric-value {{ $analysis->seo_score >= 80 ? 'text-succes' : ($analysis->seo_score >= 50 ? 'text-warning' : 'text-danger') }}">
                                 {{ $analysis->seo_score }}/100
                             </div>
                             <div class="metric-progress">
                                 <div class="progress">
-                                    <div class="progress-bar {{ $analysis->seo_score >= 80 ? 'bg-success' : ($analysis->seo_score >= 50 ? 'bg-warning' : 'bg-danger') }}" 
+                                    <div class="progress-bar {{ $analysis->seo_score >= 80 ? 'bg-succes' : ($analysis->seo_score >= 50 ? 'bg-warning' : 'bg-danger') }}" 
                                          style="width: {{ $analysis->seo_score }}%"></div>
                                 </div>
                             </div>
@@ -778,278 +778,460 @@
             </div>
 
             <!-- Technical Audit -->
-            <div class="tab-pane fade" id="audit" role="tabpanel">
-                <div class="analysis-card">
-                    <div class="card-header-section">
-                        <i class="bi bi-tools"></i>
-                        <h3>Technical Audit</h3>
+<div class="tab-pane fade" id="audit" role="tabpanel">
+    <div class="analysis-card">
+        <div class="card-header-section">
+            <i class="bi bi-tools"></i>
+            <h3>Technical Audit</h3>
+        </div>
+
+        @php
+            $audit = $analysis->technical_audit ?? [];
+            if (is_string($audit)) {
+                $audit = json_decode($audit, true) ?? [];
+            }
+            $isAuditAvailable = is_array($audit) && !empty($audit);
+        @endphp
+
+        @if($isAuditAvailable)
+            <div class="audit-grid">
+                <!-- Title Tag -->
+                <div class="audit-item {{ $audit['has_title'] ?? false ? 'audit-success' : 'audit-error' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $audit['has_title'] ?? false ? 'check-circle' : 'x-circle' }}"></i>
                     </div>
-
-                    @php
-                        $audit = $analysis->technical_audit ?? [];
-                        if (is_string($audit)) {
-                            $audit = json_decode($audit, true) ?? [];
-                        }
-                        $isAuditAvailable = is_array($audit) && !empty($audit);
-                    @endphp
-
-                    @if($isAuditAvailable)
-                        <div class="audit-grid">
-                            <!-- Title Tag -->
-                            <div class="audit-item {{ $audit['has_title'] ?? false ? 'audit-success' : 'audit-error' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $audit['has_title'] ?? false ? 'check-circle' : 'x-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Title Tag</h5>
-                                    <p>{{ $audit['has_title'] ?? false ? 'Present and optimized' : 'Missing title tag' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Meta Description -->
-                            <div class="audit-item {{ $audit['has_meta_description'] ?? false ? 'audit-success' : 'audit-error' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $audit['has_meta_description'] ?? false ? 'check-circle' : 'x-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Meta Description</h5>
-                                    <p>{{ $audit['has_meta_description'] ?? false ? 'Present and optimized' : 'Missing meta description' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- H1 Tags -->
-                            <div class="audit-item {{ ($audit['has_h1'] ?? false) ? 'audit-success' : 'audit-error' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ ($audit['has_h1'] ?? false) ? 'check-circle' : 'x-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>H1 Tags</h5>
-                                    <p>
-                                        @if($audit['has_h1'] ?? false)
-                                            Present ({{ $audit['h1_count'] ?? 1 }} found)
-                                        @else
-                                            No H1 tag found
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Viewport Meta -->
-                            <div class="audit-item {{ $audit['has_viewport'] ?? false ? 'audit-success' : 'audit-warning' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $audit['has_viewport'] ?? false ? 'check-circle' : 'exclamation-triangle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Viewport Meta</h5>
-                                    <p>{{ $audit['has_viewport'] ?? false ? 'Mobile viewport configured' : 'Missing viewport meta tag' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Canonical URL -->
-                            <div class="audit-item {{ $audit['has_canonical'] ?? false ? 'audit-success' : 'audit-info' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $audit['has_canonical'] ?? false ? 'check-circle' : 'info-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Canonical URL</h5>
-                                    <p>{{ $audit['has_canonical'] ?? false ? 'Canonical URL present' : 'No canonical URL specified' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Robots Meta -->
-                            <div class="audit-item {{ $audit['has_robots'] ?? false ? 'audit-success' : 'audit-info' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $audit['has_robots'] ?? false ? 'check-circle' : 'info-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Robots Meta</h5>
-                                    <p>{{ $audit['has_robots'] ?? false ? 'Robots meta tag present' : 'No robots meta tag' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Images without Alt -->
-                            <div class="audit-item {{ ($audit['images_with_missing_alt'] ?? 0) == 0 ? 'audit-success' : 'audit-error' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ ($audit['images_with_missing_alt'] ?? 0) == 0 ? 'check-circle' : 'x-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Images without Alt Text</h5>
-                                    <p>{{ $audit['images_with_missing_alt'] ?? 0 }} images missing alt text</p>
-                                </div>
-                            </div>
-
-                            <!-- Internal Links -->
-                            <div class="audit-item audit-info">
-                                <div class="audit-icon">
-                                    <i class="bi bi-link"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Internal Links</h5>
-                                    <p>{{ $audit['internal_links'] ?? 0 }} internal links found</p>
-                                </div>
-                            </div>
-
-                            <!-- Sitemap -->
-                            @if(isset($audit['has_sitemap']))
-                                <div class="audit-item {{ $audit['has_sitemap'] ? 'audit-success' : 'audit-info' }}">
-                                    <div class="audit-icon">
-                                        <i class="bi bi-{{ $audit['has_sitemap'] ? 'check-circle' : 'info-circle' }}"></i>
-                                    </div>
-                                    <div class="audit-content">
-                                        <h5>Sitemap Detected</h5>
-                                        <p>{{ $audit['has_sitemap'] ? 'Sitemap found' : 'No sitemap detected' }}</p>
-                                    </div>
-                                </div>
-                            @endif
-
-                            <!-- Schema.org -->
-                            @if(isset($audit['has_schema_org']))
-                                <div class="audit-item {{ $audit['has_schema_org'] ? 'audit-success' : 'audit-info' }}">
-                                    <div class="audit-icon">
-                                        <i class="bi bi-{{ $audit['has_schema_org'] ? 'check-circle' : 'info-circle' }}"></i>
-                                    </div>
-                                    <div class="audit-content">
-                                        <h5>Schema.org Markup</h5>
-                                        <p>{{ $audit['has_schema_org'] ? 'Structured data present' : 'No schema markup found' }}</p>
-                                    </div>
-                                </div>
-                            @endif
-
-                            <!-- HTTPS -->
-                            <div class="audit-item {{ $analysis->https_enabled ? 'audit-success' : 'audit-error' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $analysis->https_enabled ? 'check-circle' : 'x-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>HTTPS Enabled</h5>
-                                    <p>{{ $analysis->https_enabled ? 'Secure connection' : 'Not using HTTPS' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Structured Data -->
-                            <div class="audit-item {{ $analysis->has_structured_data ? 'audit-success' : 'audit-info' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $analysis->has_structured_data ? 'check-circle' : 'info-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Structured Data</h5>
-                                    <p>{{ $analysis->has_structured_data ? 'Structured data present' : 'No structured data found' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Noindex -->
-                            <div class="audit-item {{ $analysis->noindex_detected ? 'audit-warning' : 'audit-success' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $analysis->noindex_detected ? 'exclamation-triangle' : 'check-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Noindex Detected</h5>
-                                    <p>{{ $analysis->noindex_detected ? 'Noindex meta tag found' : 'No noindex directive' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Load Time -->
-                            <div class="audit-item audit-info">
-                                <div class="audit-icon">
-                                    <i class="bi bi-lightning"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Load Time</h5>
-                                    <p>
-                                        @php
-                                            $loadTime = $analysis->load_time;
-                                            if ($loadTime && $loadTime > 0) {
-                                                echo number_format($loadTime, 2) . ' seconds';
-                                            } else {
-                                                echo 'Not measured';
-                                            }
-                                        @endphp
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- HTML Size -->
-                            <div class="audit-item audit-info">
-                                <div class="audit-icon">
-                                    <i class="bi bi-file-code"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>HTML Size</h5>
-                                    <p>
-                                        @php
-                                            $htmlSize = $analysis->html_size;
-                                            if ($htmlSize) {
-                                                echo $htmlSize < 1000 ? $htmlSize . ' bytes' : round($htmlSize / 1024, 1) . ' KB';
-                                            } else {
-                                                echo 'N/A';
-                                            }
-                                        @endphp
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Total Links -->
-                            <div class="audit-item audit-info">
-                                <div class="audit-icon">
-                                    <i class="bi bi-link-45deg"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Total Links</h5>
-                                    <p>
-                                        @php
-                                            $totalLinks = $analysis->total_links;
-                                            if ($totalLinks !== null) {
-                                                echo $totalLinks . ' links';
-                                            } else {
-                                                echo 'N/A';
-                                            }
-                                        @endphp
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Open Graph Tags -->
-                            <div class="audit-item {{ $analysis->has_og_tags ? 'audit-success' : 'audit-info' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $analysis->has_og_tags ? 'check-circle' : 'info-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Open Graph Tags</h5>
-                                    <p>{{ $analysis->has_og_tags ? 'OG tags present' : 'No Open Graph tags' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Document Language -->
-                            <div class="audit-item audit-info">
-                                <div class="audit-icon">
-                                    <i class="bi bi-translate"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Document Language</h5>
-                                    <p>{{ $analysis->html_lang ? strtoupper($analysis->html_lang) : 'Not specified' }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Favicon -->
-                            <div class="audit-item {{ $analysis->has_favicon ? 'audit-success' : 'audit-info' }}">
-                                <div class="audit-icon">
-                                    <i class="bi bi-{{ $analysis->has_favicon ? 'check-circle' : 'info-circle' }}"></i>
-                                </div>
-                                <div class="audit-content">
-                                    <h5>Favicon</h5>
-                                    <p>{{ $analysis->has_favicon ? 'Favicon detected' : 'No favicon found' }}</p>
-                                </div>
-                            </div>
+                    <div class="audit-content">
+                        <h5>Title Tag</h5>
+                        <p>{{ $audit['has_title'] ?? false ? 'Present and optimized' : 'Missing title tag' }}</p>
+                        
+                        <!-- PREUVE : Afficher le titre actuel -->
+                        @if($audit['has_title'] ?? false && !empty($audit['title_content']))
+                        <div class="audit-proof">
+                            <strong>Title trouvé :</strong>
+                            <code class="proof-content">{{ Str::limit($audit['title_content'], 60) }}</code>
+                            <small>Longueur : {{ $audit['title_length'] ?? 0 }} caractères</small>
                         </div>
-                    @else
-                        <div class="empty-state">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <h4>Technical Audit Unavailable</h4>
-                            <p>Technical audit data is not available for this analysis.</p>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
                 </div>
+
+                <!-- Meta Description -->
+                <div class="audit-item {{ $audit['has_meta_description'] ?? false ? 'audit-success' : 'audit-error' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $audit['has_meta_description'] ?? false ? 'check-circle' : 'x-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Meta Description</h5>
+                        <p>{{ $audit['has_meta_description'] ?? false ? 'Present and optimized' : 'Missing meta description' }}</p>
+                        
+                        <!-- PREUVE : Afficher la meta description -->
+                        @if($audit['has_meta_description'] ?? false && !empty($audit['meta_description_content']))
+                        <div class="audit-proof">
+                            <strong>Meta Description :</strong>
+                            <code class="proof-content">{{ Str::limit($audit['meta_description_content'], 80) }}</code>
+                            <small>Longueur : {{ $audit['meta_description_length'] ?? 0 }} caractères</small>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- H1 Tags -->
+                <div class="audit-item {{ ($audit['has_h1'] ?? false) ? 'audit-success' : 'audit-error' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ ($audit['has_h1'] ?? false) ? 'check-circle' : 'x-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>H1 Tags</h5>
+                        <p>
+                            @if($audit['has_h1'] ?? false)
+                                Present ({{ $audit['h1_count'] ?? 1 }} found)
+                            @else
+                                No H1 tag found
+                            @endif
+                        </p>
+                        
+                        <!-- PREUVE : Afficher les H1 trouvés -->
+                        @if($audit['has_h1'] ?? false && !empty($audit['h1_text_samples']))
+                        <div class="audit-proof">
+                            <strong>H1 trouvé(s) :</strong>
+                            @foreach($audit['h1_text_samples'] as $h1Text)
+                                <code class="proof-content">{{ Str::limit($h1Text, 50) }}</code>
+                            @endforeach
+                            @if(($audit['h1_count'] ?? 0) > 1)
+                            <small class="text-warning">⚠️ Multiple H1 detected</small>
+                            @endif
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Viewport Meta -->
+                <div class="audit-item {{ $audit['has_viewport'] ?? false ? 'audit-success' : 'audit-warning' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $audit['has_viewport'] ?? false ? 'check-circle' : 'exclamation-triangle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Viewport Meta</h5>
+                        <p>{{ $audit['has_viewport'] ?? false ? 'Mobile viewport configured' : 'Missing viewport meta tag' }}</p>
+                        
+                        <!-- PREUVE : Afficher le contenu viewport -->
+                        @if($audit['has_viewport'] ?? false && !empty($audit['viewport_content']))
+                        <div class="audit-proof">
+                            <strong>Viewport :</strong>
+                            <code class="proof-content">{{ $audit['viewport_content'] }}</code>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Canonical URL -->
+                <div class="audit-item {{ $audit['has_canonical'] ?? false ? 'audit-success' : 'audit-info' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $audit['has_canonical'] ?? false ? 'check-circle' : 'info-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Canonical URL</h5>
+                        <p>{{ $audit['has_canonical'] ?? false ? 'Canonical URL present' : 'No canonical URL specified' }}</p>
+                        
+                        <!-- PREUVE : Afficher l'URL canonique -->
+                        @if($audit['has_canonical'] ?? false && !empty($audit['canonical_url']))
+                        <div class="audit-proof">
+                            <strong>Canonical :</strong>
+                            <code class="proof-content">{{ Str::limit($audit['canonical_url'], 50) }}</code>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Robots Meta -->
+                <div class="audit-item {{ $audit['has_robots'] ?? false ? 'audit-success' : 'audit-info' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $audit['has_robots'] ?? false ? 'check-circle' : 'info-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Robots Meta</h5>
+                        <p>{{ $audit['has_robots'] ?? false ? 'Robots meta tag present' : 'No robots meta tag' }}</p>
+                        
+                        <!-- PREUVE : Afficher le contenu robots -->
+                        @if($audit['has_robots'] ?? false && !empty($audit['robots_content']))
+                        <div class="audit-proof">
+                            <strong>Robots :</strong>
+                            <code class="proof-content">{{ $audit['robots_content'] }}</code>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Sitemap -->
+                <div class="audit-item {{ $audit['has_sitemap'] ? 'audit-success' : 'audit-info' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $audit['has_sitemap'] ? 'check-circle' : 'info-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Sitemap Detected</h5>
+                        <p>{{ $audit['has_sitemap'] ? 'Sitemap found' : 'No sitemap detected' }}</p>
+                        
+                        <!-- PREUVE : Afficher l'URL du sitemap -->
+                        @if($audit['has_sitemap'] && !empty($audit['sitemap_url']))
+                        <div class="audit-proof">
+                            <strong>Sitemap :</strong>
+                            <code class="proof-content">{{ $audit['sitemap_url'] }}</code>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Schema.org -->
+               <!-- Schema.org -->
+<div class="audit-item {{ $audit['has_schema_org'] ? 'audit-success' : 'audit-info' }}">
+    <div class="audit-icon">
+        <i class="bi bi-{{ $audit['has_schema_org'] ? 'check-circle' : 'info-circle' }}"></i>
+    </div>
+    <div class="audit-content">
+        <h5>Schema.org Markup</h5>
+        <p>
+            @if($audit['has_schema_org'])
+                Structured data present 
+                @if(isset($audit['schema_org_count']))
+                    ({{ $audit['schema_org_count'] }} elements)
+                @else
+                    ({{ count($audit['schema_types'] ?? []) }} types detected)
+                @endif
+            @else
+                No schema markup found
+            @endif
+        </p>
+        
+        <!-- PREUVE : Afficher les types Schema -->
+        @if($audit['has_schema_org'] && !empty($audit['schema_types']) && is_array($audit['schema_types']))
+        <div class="audit-proof">
+            <strong>Schema Types Detected:</strong>
+            <div class="schema-tags">
+                @foreach($audit['schema_types'] as $type)
+                    <span class="schema-tag">{{ $type }}</span>
+                @endforeach
             </div>
+            <small class="text-muted">
+                @if(count($audit['schema_types']) == 4)
+                    4 schema types identified
+                @else
+                    {{ count($audit['schema_types']) }} schema types identified
+                @endif
+            </small>
+        </div>
+        @endif
+    </div>
+</div>
+                
+
+                <!-- Open Graph Tags -->
+                <div class="audit-item {{ $audit['has_og_tags'] ? 'audit-success' : 'audit-info' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $audit['has_og_tags'] ? 'check-circle' : 'info-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Open Graph Tags</h5>
+                        <p>{{ $audit['has_og_tags'] ? 'OG tags present' : 'No Open Graph tags' }}</p>
+                        
+                        <!-- PREUVE : Afficher les OG tags détectés -->
+                        @if($audit['has_og_tags'] && !empty($audit['og_tags_sample']))
+                        <div class="audit-proof">
+                            <strong>OG Tags ({{ count($audit['og_tags_sample']) }}):</strong>
+                            <div class="og-tags">
+                                @foreach($audit['og_tags_sample'] as $property => $content)
+                                <div class="og-tag">
+                                    <code>{{ $property }}:</code>
+                                    <span>{{ Str::limit($content, 30) }}</span>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- ⚠️ LES AUTRES ITEMS SANS PREUVES (gardés comme avant) -->
+
+                <!-- Images without Alt -->
+                <div class="audit-item {{ ($audit['images_with_missing_alt'] ?? 0) == 0 ? 'audit-success' : 'audit-error' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ ($audit['images_with_missing_alt'] ?? 0) == 0 ? 'check-circle' : 'x-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Images without Alt Text</h5>
+                        <p>{{ $audit['images_with_missing_alt'] ?? 0 }} images missing alt text</p>
+                    </div>
+                </div>
+
+                <!-- Internal Links -->
+                <div class="audit-item audit-info">
+                    <div class="audit-icon">
+                        <i class="bi bi-link"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Internal Links</h5>
+                        <p>{{ $audit['internal_links'] ?? 0 }} internal links found</p>
+                    </div>
+                </div>
+
+                <!-- HTTPS -->
+                <div class="audit-item {{ $analysis->https_enabled ? 'audit-success' : 'audit-error' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $analysis->https_enabled ? 'check-circle' : 'x-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>HTTPS Enabled</h5>
+                        <p>{{ $analysis->https_enabled ? 'Secure connection' : 'Not using HTTPS' }}</p>
+                    </div>
+                </div>
+
+                <!-- Structured Data -->
+<div class="audit-item {{ $analysis->has_structured_data ? 'audit-success' : 'audit-info' }}">
+    <div class="audit-icon">
+        <i class="bi bi-{{ $analysis->has_structured_data ? 'check-circle' : 'info-circle' }}"></i>
+    </div>
+    <div class="audit-content">
+        <h5>Structured Data</h5>
+        <p>
+            @if($analysis->has_structured_data)
+                Structured data present
+                @if(isset($audit['has_schema_org']) && $audit['has_schema_org'])
+                    (Schema.org detected)
+                @elseif(isset($audit['has_og_tags']) && $audit['has_og_tags'])
+                    (Open Graph detected)
+                @endif
+            @else
+                No structured data found
+            @endif
+        </p>
+        
+        <!-- PREUVE : Afficher les types de structured data détectés -->
+        @if($analysis->has_structured_data)
+        <div class="audit-proof">
+            <strong>Structured Data Types:</strong>
+            <div class="data-types">
+                @if(isset($audit['has_schema_org']) && $audit['has_schema_org'] && !empty($audit['schema_types']))
+                <div class="data-type-group">
+                    <span class="data-type-label">Schema.org:</span>
+                    <div class="schema-tags">
+                        @foreach(array_slice($audit['schema_types'], 0, 3) as $type)
+                        <span class="schema-tag">{{ $type }}</span>
+                        @endforeach
+                        @if(count($audit['schema_types']) > 3)
+                        <span class="schema-tag">+{{ count($audit['schema_types']) - 3 }}</span>
+                        @endif
+                    </div>
+                </div>
+                @endif
+                
+                @if(isset($audit['has_og_tags']) && $audit['has_og_tags'] && !empty($audit['og_tags_sample']))
+                <div class="data-type-group">
+                    <span class="data-type-label">Open Graph:</span>
+                    <div class="og-tags-mini">
+                        @foreach(array_slice($audit['og_tags_sample'], 0, 3) as $property => $content)
+                        <span class="og-tag-mini" title="{{ $property }}: {{ $content }}">
+                            {{ Str::limit(str_replace('og:', '', $property), 15) }}
+                        </span>
+                        @endforeach
+                        @if(count($audit['og_tags_sample']) > 3)
+                        <span class="og-tag-mini">+{{ count($audit['og_tags_sample']) - 3 }}</span>
+                        @endif
+                    </div>
+                </div>
+                @endif
+                
+                @if(isset($audit['has_twitter_cards']) && $audit['has_twitter_cards'])
+                <div class="data-type-group">
+                    <span class="data-type-label">Twitter Cards:</span>
+                    <span class="data-type-badge">Present</span>
+                </div>
+                @endif
+                
+                @if(!empty($analysis->has_structured_data) && empty($audit['has_schema_org']) && empty($audit['has_og_tags']) && empty($audit['has_twitter_cards']))
+                <div class="data-type-group">
+                    <span class="data-type-label">Other formats:</span>
+                    <span class="data-type-badge">Microdata/RDFa</span>
+                </div>
+                @endif
+            </div>
+            
+            <small class="text-muted">
+                @php
+                    $totalTypes = 0;
+                    if (isset($audit['has_schema_org']) && $audit['has_schema_org']) $totalTypes++;
+                    if (isset($audit['has_og_tags']) && $audit['has_og_tags']) $totalTypes++;
+                    if (isset($audit['has_twitter_cards']) && $audit['has_twitter_cards']) $totalTypes++;
+                @endphp
+                {{ $totalTypes }} structured data format(s) detected
+            </small>
+        </div>
+        @endif
+    </div>
+</div>
+
+                <!-- Noindex -->
+                <div class="audit-item {{ $analysis->noindex_detected ? 'audit-warning' : 'audit-success' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $analysis->noindex_detected ? 'exclamation-triangle' : 'check-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Noindex Detected</h5>
+                        <p>{{ $analysis->noindex_detected ? 'Noindex meta tag found' : 'No noindex directive' }}</p>
+                    </div>
+                </div>
+
+                <!-- Load Time -->
+                <div class="audit-item audit-info">
+                    <div class="audit-icon">
+                        <i class="bi bi-lightning"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Load Time</h5>
+                        <p>
+                            @php
+                                $loadTime = $analysis->load_time;
+                                if ($loadTime && $loadTime > 0) {
+                                    echo number_format($loadTime, 2) . ' seconds';
+                                } else {
+                                    echo 'Not measured';
+                                }
+                            @endphp
+                        </p>
+                    </div>
+                </div>
+
+                <!-- HTML Size -->
+                <div class="audit-item audit-info">
+                    <div class="audit-icon">
+                        <i class="bi bi-file-code"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>HTML Size</h5>
+                        <p>
+                            @php
+                                $htmlSize = $analysis->html_size;
+                                if ($htmlSize) {
+                                    echo $htmlSize < 1000 ? $htmlSize . ' bytes' : round($htmlSize / 1024, 1) . ' KB';
+                                } else {
+                                    echo 'N/A';
+                                }
+                            @endphp
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Total Links -->
+                <div class="audit-item audit-info">
+                    <div class="audit-icon">
+                        <i class="bi bi-link-45deg"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Total Links</h5>
+                        <p>
+                            @php
+                                $totalLinks = $analysis->total_links;
+                                if ($totalLinks !== null) {
+                                    echo $totalLinks . ' links';
+                                } else {
+                                    echo 'N/A';
+                                }
+                            @endphp
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Document Language -->
+                <div class="audit-item audit-info">
+                    <div class="audit-icon">
+                        <i class="bi bi-translate"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Document Language</h5>
+                        <p>{{ $analysis->html_lang ? strtoupper($analysis->html_lang) : 'Not specified' }}</p>
+                    </div>
+                </div>
+
+                <!-- Favicon -->
+                <div class="audit-item {{ $analysis->has_favicon ? 'audit-success' : 'audit-info' }}">
+                    <div class="audit-icon">
+                        <i class="bi bi-{{ $analysis->has_favicon ? 'check-circle' : 'info-circle' }}"></i>
+                    </div>
+                    <div class="audit-content">
+                        <h5>Favicon</h5>
+                        <p>{{ $analysis->has_favicon ? 'Favicon detected' : 'No favicon found' }}</p>
+                    </div>
+                </div>
+
+            </div>
+        @else
+            <div class="empty-state">
+                <i class="bi bi-exclamation-triangle"></i>
+                <h4>Technical Audit Unavailable</h4>
+                <p>Technical audit data is not available for this analysis.</p>
+            </div>
+        @endif
+    </div>
+</div>
 
             <!-- Structural Audit -->
             <div class="tab-pane fade" id="audit-structure" role="tabpanel">
@@ -2357,4 +2539,72 @@
 .hierarchy-level-4 { --level: 4; }
 .hierarchy-level-5 { --level: 5; }
 .hierarchy-level-6 { --level: 6; }
+
+/* style structured data*/ 
+
+.data-types {
+    margin-top: 0.5rem;
+}
+
+.data-type-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+}
+
+.data-type-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    min-width: 100px;
+}
+
+.data-type-badge {
+    background: #6c757d;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.og-tags-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.og-tag-mini {
+    background: #17a2b8;
+    color: white;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: help;
+}
+
+.schema-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.schema-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.text-succes
+{
+    color: #82c4c1 !important;
+}
+.bg-succes{
+    background-color: #82c4c1 !important;
+}
 </style>

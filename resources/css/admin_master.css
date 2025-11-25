@@ -1315,6 +1315,7 @@ body.scrolling .pagerank-card:hover {
     align-items: center !important;
     justify-content: center !important;
     
+    
 }
 
 .circle-progress::before {
@@ -1325,6 +1326,10 @@ body.scrolling .pagerank-card:hover {
     background: var(--color);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
     mask: conic-gradient(from 0deg, transparent 0%, white calc(var(--progress) * 1%), white 100%);
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .circle-progress::after {
@@ -1337,6 +1342,10 @@ body.scrolling .pagerank-card:hover {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .score-number {

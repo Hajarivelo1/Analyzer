@@ -795,31 +795,202 @@ private function extractTechnicalAuditOptimized(DomCrawler $crawler, string $ori
             'sitemap_detected' => $sitemapDetected,
             'sitemap_url' => $this->getDiscoveredSitemapUrl($domain)
         ]);
+
+        // 🔥 EXTRACTION DES PREUVES SEULEMENT POUR LES ÉLÉMENTS DEMANDÉS
+        $title = $this->safeExtract($crawler, 'title', 'text');
+        $metaDescription = $this->safeExtract($crawler, 'meta[name="description"]', 'content');
         
+        // Extraction des H1 pour les preuves
+        $h1Tags = $crawler->filter('h1')->each(function($node) {
+            $text = trim($node->text());
+            return [
+                'text' => $text,
+                'length' => strlen($text)
+            ];
+        });
+
         return [
+            // 🔥 TITLE TAG avec preuve
             'has_title' => $crawler->filter('title')->count() > 0,
+            'title_content' => $title, // PREUVE
+            'title_length' => $title ? strlen($title) : 0, // PREUVE
+            
+            // 🔥 META DESCRIPTION avec preuve
             'has_meta_description' => $crawler->filter('meta[name="description"]')->count() > 0,
+            'meta_description_content' => $metaDescription, // PREUVE
+            'meta_description_length' => $metaDescription ? strlen($metaDescription) : 0, // PREUVE
+            
+            // 🔥 H1 TAGS avec preuve
             'has_h1' => $crawler->filter('h1')->count() > 0,
             'h1_count' => $crawler->filter('h1')->count(),
+            'h1_tags' => array_slice($h1Tags, 0, 3), // PREUVE
+            'h1_text_samples' => array_map(function($h1) {
+                return $h1['text'];
+            }, array_slice($h1Tags, 0, 3)), // PREUVE
+            
+            // 🔥 VIEWPORT META avec preuve
             'has_viewport' => $crawler->filter('meta[name="viewport"]')->count() > 0,
+            'viewport_content' => $this->safeExtract($crawler, 'meta[name="viewport"]', 'content'), // PREUVE
+            
+            // 🔥 CANONICAL URL avec preuve
             'has_canonical' => $crawler->filter('link[rel="canonical"]')->count() > 0,
+            'canonical_url' => $this->safeExtract($crawler, 'link[rel="canonical"]', 'href'), // PREUVE
+            
+            // 🔥 ROBOTS META avec preuve
             'has_robots' => $crawler->filter('meta[name="robots"]')->count() > 0,
+            'robots_content' => $this->safeExtract($crawler, 'meta[name="robots"]', 'content'), // PREUVE
+            
+            // 🔥 SITEMAP avec preuve
+            'has_sitemap' => $sitemapDetected,
+            'sitemap_url' => $this->getDiscoveredSitemapUrl($domain), // PREUVE
+            
+            // 🔥 SCHEMA.ORG avec preuve
+            'has_schema_org' => $crawler->filter('script[type="application/ld+json"], [itemtype]')->count() > 0,
+            'schema_types' => $this->extractSchemaTypes($crawler), // PREUVE
+            
+            // 🔥 OPEN GRAPH TAGS avec preuve
+            'has_og_tags' => $crawler->filter('meta[property^="og:"]')->count() > 0,
+            'og_tags_sample' => $this->extractOgTags($crawler), // PREUVE
+
+            // ⚠️ LES AUTRES INDICATEURS SANS PREUVES (gardés comme avant)
             'images_with_missing_alt' => $crawler->filter('img:not([alt])')->count(),
             'internal_links' => $crawler->filter("a[href^='/'], a[href*='{$domain}']")->count(),
-            
-            // 🔥 CORRIGÉ : Utiliser la nouvelle détection
-            'has_sitemap' => $sitemapDetected,
-            'sitemap_url' => $this->getDiscoveredSitemapUrl($domain),
-            
             'has_favicon' => $crawler->filter('link[rel="icon"], link[rel="shortcut icon"]')->count() > 0,
-            'has_og_tags' => $crawler->filter('meta[property^="og:"]')->count() > 0,
             'has_twitter_cards' => $crawler->filter('meta[name^="twitter:"]')->count() > 0,
-            'has_schema_org' => $crawler->filter('script[type="application/ld+json"], [itemtype]')->count() > 0,
         ];
     } catch (\Exception $e) {
         Log::error('Technical audit failed', ['error' => $e->getMessage()]);
         return $this->getDefaultTechnicalAudit();
     }
+}
+
+/**
+ * 🔥 NOUVELLE MÉTHODE : Extraction des tags Open Graph
+ */
+private function extractOgTags(DomCrawler $crawler): array
+{
+    $ogTags = [];
+    try {
+        $crawler->filter('meta[property^="og:"]')->each(function($node) use (&$ogTags) {
+            $property = $node->attr('property');
+            $content = $node->attr('content');
+            if ($property && $content) {
+                $ogTags[$property] = $content; // ← String directement
+            }
+        });
+    } catch (\Exception $e) {
+        Log::debug('OG tags extraction failed', ['error' => $e->getMessage()]);
+    }
+    return array_slice($ogTags, 0, 5);
+}
+
+/**
+ * 🔥 NOUVELLE MÉTHODE : Extraction des Twitter Cards
+ */
+private function extractTwitterCards(DomCrawler $crawler): array
+{
+    $twitterCards = [];
+    try {
+        $crawler->filter('meta[name^="twitter:"]')->each(function($node) use (&$twitterCards) {
+            $name = $node->attr('name');
+            $content = $node->attr('content');
+            if ($name && $content) {
+                // 🔥 CORRECTION : Stocker seulement le contenu en string
+                $twitterCards[$name] = $content; // ← Retourne directement la string
+            }
+        });
+    } catch (\Exception $e) {
+        Log::debug('Twitter cards extraction failed', ['error' => $e->getMessage()]);
+    }
+    return array_slice($twitterCards, 0, 5); // Limiter à 5 tags
+}
+
+/**
+ * 🔥 NOUVELLE MÉTHODE : Extraction des types Schema.org
+ */
+private function extractSchemaTypes(DomCrawler $crawler): array
+{
+    $types = [];
+    
+    try {
+        // JSON-LD
+        $crawler->filter('script[type="application/ld+json"]')->each(function($node) use (&$types) {
+            try {
+                $jsonText = trim($node->text());
+                if (!empty($jsonText)) {
+                    $data = json_decode($jsonText, true);
+                    
+                    if (json_last_error() === JSON_ERROR_NONE && $data) {
+                        // Gérer le type principal
+                        if (isset($data['@type'])) {
+                            if (is_array($data['@type'])) {
+                                $types = array_merge($types, $data['@type']);
+                            } else {
+                                $types[] = $data['@type'];
+                            }
+                        }
+                        
+                        // Gérer les graph arrays
+                        if (isset($data['@graph']) && is_array($data['@graph'])) {
+                            foreach ($data['@graph'] as $item) {
+                                if (isset($item['@type'])) {
+                                    if (is_array($item['@type'])) {
+                                        $types = array_merge($types, $item['@type']);
+                                    } else {
+                                        $types[] = $item['@type'];
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Gérer les items dans un array
+                        if (isset($data['itemListElement']) && is_array($data['itemListElement'])) {
+                            foreach ($data['itemListElement'] as $item) {
+                                if (isset($item['@type'])) {
+                                    $types[] = $item['@type'];
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::debug('JSON-LD parsing error', ['error' => $e->getMessage()]);
+            }
+        });
+        
+        // Microdata - CORRECTION ICI
+        $crawler->filter('[itemtype]')->each(function($node) use (&$types) {
+            try {
+                $itemtype = $node->attr('itemtype');
+                if ($itemtype && is_string($itemtype)) {
+                    // Extraire le type depuis l'URL (ex: http://schema.org/Product → Product)
+                    $type = basename($itemtype);
+                    if (!in_array($type, $types)) {
+                        $types[] = $type;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::debug('Microdata parsing error', ['error' => $e->getMessage()]);
+            }
+        });
+        
+    } catch (\Exception $e) {
+        Log::debug('Schema.org extraction failed', ['error' => $e->getMessage()]);
+    }
+    
+    // Nettoyer et limiter les résultats
+    $types = array_filter($types, function($type) {
+        return is_string($type) && !empty(trim($type));
+    });
+    
+    $types = array_unique($types);
+    
+    Log::info('🔍 Schema.org types extracted', [
+        'types_found' => $types,
+        'total_types' => count($types)
+    ]);
+    
+    return array_slice($types, 0, 5);
 }
 
 /**
@@ -1361,24 +1532,39 @@ public function testSitemapMethods(string $domain): array
      * Audit technique par défaut en cas d'erreur
      */
     private function getDefaultTechnicalAudit(): array
-    {
-        return [
-            'has_title' => false,
-            'has_meta_description' => false,
-            'has_h1' => false,
-            'h1_count' => 0,
-            'has_viewport' => false,
-            'has_canonical' => false,
-            'has_robots' => false,
-            'images_with_missing_alt' => 0,
-            'internal_links' => 0,
-            'has_sitemap' => false,
-            'has_favicon' => false,
-            'has_og_tags' => false,
-            'has_twitter_cards' => false,
-            'has_schema_org' => false,
-        ];
-    }
+{
+    return [
+        // Avec preuves
+        'has_title' => false,
+        'title_content' => null,
+        'title_length' => 0,
+        'has_meta_description' => false,
+        'meta_description_content' => null,
+        'meta_description_length' => 0,
+        'has_h1' => false,
+        'h1_count' => 0,
+        'h1_tags' => [],
+        'h1_text_samples' => [],
+        'has_viewport' => false,
+        'viewport_content' => null,
+        'has_canonical' => false,
+        'canonical_url' => null,
+        'has_robots' => false,
+        'robots_content' => null,
+        'has_sitemap' => false,
+        'sitemap_url' => null,
+        'has_schema_org' => false,
+        'schema_types' => [],
+        'has_og_tags' => false,
+        'og_tags_sample' => [],
+        
+        // Sans preuves (gardés comme avant)
+        'images_with_missing_alt' => 0,
+        'internal_links' => 0,
+        'has_favicon' => false,
+        'has_twitter_cards' => false,
+    ];
+}
 
     /**
      * Analyse de contenu par défaut
